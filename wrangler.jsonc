@@ -11,6 +11,10 @@
   },
   // Astro sessions; declared explicitly because Workers Builds previews cannot auto-provision it
   "kv_namespaces": [{ "binding": "SESSION", "id": "c5c7150d952f43dc83e3f7572905b2b8" }],
+  // Workers Builds branch previews (`wrangler preview`) use this section; separate KV keeps preview sessions out of prod
+  "previews": {
+    "kv_namespaces": [{ "binding": "SESSION", "id": "ee50e4c5962045d1829366d4615abde7" }],
+  },
   "observability": {
     "enabled": true,
   },
