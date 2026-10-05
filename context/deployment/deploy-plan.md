@@ -91,3 +91,14 @@ Legenda: 🤖 = agent robi sam · 👤 = ręczna bramka (Ty)
 - Pułapka: `wrangler secret put` bez TTY (prompt `!` w Claude Code, Git Bash/mintty) zapisuje **pusty** sekret i zgłasza „Success”. Sekrety ustawione przez `wrangler secret bulk` z pliku tymczasowego (tylko `SUPABASE_URL` + `SUPABASE_KEY`=publishable key; secret key nie trafił na Workera).
 - Supabase Auth: Site URL + redirect URLs ustawione ręcznie; ręczny test signup → potwierdzenie → signin → dashboard → signout — OK.
 - `ci.yml`: `master` → `main`.
+
+## Dziennik wykonania — GitHub + Workers Builds (2026-10-05)
+
+- Repo: https://github.com/Thorgoo/ai-flashcards (publiczne). Materiały kursu (`.claude/skills`, `.claude/prompts`, `.agents`, `CLAUDE.md`, `.10x-cli.json`, `skills-lock.json`) są w `.gitignore` i poza repo.
+- `gh` potrzebuje scope `workflow`, żeby pushować `.github/workflows/*` (`gh auth refresh -h github.com -s workflow`, interaktywnie).
+- Ruleset `protect-main` na `main`: tylko przez PR, wymagany check `ci`, brak usuwania i force-pusha. Na prywatnym repo bez GitHub Pro rulesety są niedostępne (HTTP 403).
+- Workers Builds: Production = `main`, `npm run build` + `npx wrangler deploy`. Previews Base = `npm run build` + `npx wrangler versions upload`.
+- Pułapka: domyślna komenda podglądu `npx wrangler preview` (private beta) odrzuca KV bez `namespace_id` (`code: 10021`). Trigger gałęzi kopiuje komendę z Previews Base w chwili pierwszego pusha — zmiana bazy nie dotyczy istniejących gałęzi.
+- `SESSION` KV zadeklarowany jawnie w `wrangler.jsonc` (id `c5c7150d952f43dc83e3f7572905b2b8`); rollback do `e6ef1383` może być zablokowany przez zmianę deklaracji bindingów.
+- PR #1 (sitemap `site` + jawny `SESSION`) zmergowany ręcznie → Workers Builds wdrożył wersję `fbb73dda-ca71-41f5-b250-4795089230c8` ok. 1 min po merge. Produkcja zweryfikowana (`/` 200, `/dashboard` 302, `/sitemap-index.xml` 200, Supabase odpowiada).
+- Node w buildach: `.nvmrc` 22.14.0 → 22.23.3 (zależności wymagają ≥ 22.22.3); CI czyta wersję z `.nvmrc`.
