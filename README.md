@@ -73,7 +73,7 @@ npm run dev
 
 ## Supabase Configuration
 
-This project uses [Supabase](https://supabase.com/) for authentication. Environment variables are declared via Astro's `astro:env` schema and are treated as **server-only secrets** — they are never exposed to the client.
+This project uses [Supabase](https://supabase.com/) for authentication. Sign-in is **GitHub OAuth only**, restricted to the emails listed in `ALLOWED_EMAILS` — there is no public sign-up and no password login. Environment variables are declared via Astro's `astro:env` schema and are treated as **server-only secrets** — they are never exposed to the client.
 
 ### First-time setup (local, no cloud project needed)
 
@@ -97,12 +97,15 @@ npx supabase init
 npx supabase start
 ```
 
-4. Copy the credentials printed by the CLI into your `.env` and `.dev.vars`:
+4. Copy the credentials printed by the CLI into your `.env` and `.dev.vars`, and list who may sign in:
 
 ```
 SUPABASE_URL=http://127.0.0.1:54321
 SUPABASE_KEY=<anon key from CLI output>
+ALLOWED_EMAILS=you@example.com,partner@example.com
 ```
+
+For a real local GitHub login, create a GitHub OAuth App with callback `http://127.0.0.1:54321/auth/v1/callback` and export `SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID` / `SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET` before `npx supabase start` (read by `supabase/config.toml`).
 
 5. To stop the stack when done:
 
@@ -112,42 +115,37 @@ npx supabase stop
 
 The local Studio UI is available at `http://localhost:54323`.
 
-No database tables or migrations are required — this project uses Supabase Auth's built-in `auth.users` table only.
-
 ### Using a cloud Supabase project instead
 
 If you prefer to use a hosted Supabase project, add these variables to your `.env` and `.dev.vars` files:
 
-| Variable       | Description                                                |
-| -------------- | ---------------------------------------------------------- |
-| `SUPABASE_URL` | Project URL from Supabase dashboard → Settings → API       |
-| `SUPABASE_KEY` | `anon` public key from Supabase dashboard → Settings → API |
+| Variable         | Description                                                |
+| ---------------- | ---------------------------------------------------------- |
+| `SUPABASE_URL`   | Project URL from Supabase dashboard → Settings → API       |
+| `SUPABASE_KEY`   | `anon` public key from Supabase dashboard → Settings → API |
+| `ALLOWED_EMAILS` | Comma-separated emails allowed to sign in (unset = nobody) |
 
 ```
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_KEY=<anon-key>
+ALLOWED_EMAILS=you@example.com
 ```
 
-### Email confirmation in local development
+In the Supabase dashboard:
 
-By default Supabase requires email confirmation before a user can sign in. To skip this during local development:
-
-1. Open the Supabase dashboard for your project
-2. Go to **Authentication → Email → Confirm email**
-3. Toggle it **off**
-
-Users can then sign in immediately after sign-up without clicking a confirmation link.
+1. **Authentication → Providers → GitHub** — enable it with the client ID/secret of a GitHub OAuth App whose callback is `https://<project-ref>.supabase.co/auth/v1/callback`. Disable the **Email** provider.
+2. **Authentication → URL Configuration** — add every origin the app runs on to **Redirect URLs** (`http://localhost:4321/**`, the production `*.workers.dev` URL and the branch-preview pattern), otherwise OAuth fails there.
 
 ### Auth routes
 
-| Route                 | Description                                                             |
-| --------------------- | ----------------------------------------------------------------------- |
-| `/auth/signin`        | Email/password sign-in form                                             |
-| `/auth/signup`        | Email/password sign-up form                                             |
-| `/auth/confirm-email` | Post-signup "check your inbox" page                                     |
-| `/dashboard`          | Example protected page (redirects to `/auth/signin` if unauthenticated) |
+| Route                | Description                                                                |
+| -------------------- | -------------------------------------------------------------------------- |
+| `/auth/signin`       | "Sign in with GitHub" button                                               |
+| `/api/auth/signin`   | Starts the GitHub OAuth flow                                               |
+| `/api/auth/callback` | OAuth callback: exchanges the code, rejects emails not in `ALLOWED_EMAILS` |
+| `/dashboard`         | Example protected page (redirects to `/auth/signin` if unauthenticated)    |
 
-Route protection is handled in `src/middleware.ts`. Add paths to the `PROTECTED_ROUTES` array there to require authentication.
+Route protection is handled in `src/middleware.ts`. Add paths to the `PROTECTED_ROUTES` array there to require authentication. The middleware also signs out any session whose email is no longer in `ALLOWED_EMAILS`.
 
 ## Deployment
 
@@ -165,18 +163,18 @@ npm run build
 npx wrangler deploy
 ```
 
-Set `SUPABASE_URL` and `SUPABASE_KEY` as secrets in your Cloudflare dashboard or via `npx wrangler secret put`.
+Set `SUPABASE_URL`, `SUPABASE_KEY` and `ALLOWED_EMAILS` as secrets in your Cloudflare dashboard or via `npx wrangler secret put`.
 
 ## Smoke test
 
-`scripts/smoke.mjs` is a dependency-free Node script that walks the whole auth flow (sign-up, sign-in, protected page, sign-out) over HTTP. Run it against the dev server or the production preview after dependency upgrades:
+`scripts/smoke.mjs` is a dependency-free Node script that checks the auth entry points over HTTP (protected-page redirect, GitHub OAuth redirect, callback error path, removed sign-up routes, sign-out). The full OAuth round-trip needs a real GitHub account and is verified manually. Run it against the dev server or the production preview after dependency upgrades:
 
 ```bash
 npm run dev            # or: npm run build && npm run preview
 BASE_URL=http://localhost:4321 npm run smoke
 ```
 
-It needs a reachable Supabase instance (local or cloud) with email confirmation disabled.
+It needs a reachable Supabase instance (local or cloud) with the GitHub provider enabled.
 
 > **Note:** this script exists primarily to guard the development of the starter itself — it is a fast sanity check that dependency upgrades did not break the build, the Cloudflare adapter or the Supabase auth flow. It is **not** a substitute for a real test suite. Once you build your own product on top of this starter, add proper tests (unit, integration, end-to-end) suited to your application.
 

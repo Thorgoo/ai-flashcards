@@ -19,6 +19,8 @@ export default defineConfig({
     schema: {
       SUPABASE_URL: envField.string({ context: "server", access: "secret", optional: true }),
       SUPABASE_KEY: envField.string({ context: "server", access: "secret", optional: true }),
+      // Comma-separated emails allowed to sign in; unset means nobody can.
+      ALLOWED_EMAILS: envField.string({ context: "server", access: "secret", optional: true }),
     },
   },
 });
