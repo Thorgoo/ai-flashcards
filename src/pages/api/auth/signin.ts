@@ -2,19 +2,20 @@ import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
 
 export const POST: APIRoute = async (context) => {
-  const form = await context.request.formData();
-  const email = form.get("email") as string;
-  const password = form.get("password") as string;
-
   const supabase = createClient(context.request.headers, context.cookies);
   if (!supabase) {
     return context.redirect(`/auth/signin?error=${encodeURIComponent("Supabase is not configured")}`);
   }
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  // Origin comes from the request so local dev, branch previews and production all call back to themselves.
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "github",
+    options: { redirectTo: `${context.url.origin}/api/auth/callback` },
+  });
 
   if (error) {
     return context.redirect(`/auth/signin?error=${encodeURIComponent(error.message)}`);
   }
 
-  return context.redirect("/");
+  return context.redirect(data.url);
 };
