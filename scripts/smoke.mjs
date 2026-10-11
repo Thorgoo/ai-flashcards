@@ -1,9 +1,8 @@
-// Smoke test: proves the built app, the Cloudflare adapter and the Supabase auth flow still work together.
+// Smoke test: proves the built app, the Cloudflare adapter and the GitHub OAuth entry points still work together.
+// The OAuth round-trip itself (GitHub consent, allowlist check) needs a real account and is verified manually.
 // Zero dependencies on purpose. Run against a live server: BASE_URL=http://localhost:4321 node scripts/smoke.mjs
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:4321";
-const email = `smoke-${Date.now()}@example.com`;
-const password = "Smoke-Test-Passw0rd!";
 const jar = new Map();
 
 function cookieHeader() {
@@ -38,24 +37,20 @@ async function request(path, { method = "GET", form } = {}) {
 const steps = [
   ["home renders", () => request("/"), { status: 200 }],
   ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
+  ["signin page renders", () => request("/auth/signin"), { status: 200 }],
+  ["public signup page is gone", () => request("/auth/signup"), { status: 404 }],
+  ["public signup endpoint is gone", () => request("/api/auth/signup", { method: "POST" }), { status: 404 }],
   [
-    "signup creates account",
-    () => request("/api/auth/signup", { method: "POST", form: { email, password } }),
-    { status: 302, location: "/auth/confirm-email" },
+    "signin redirects to GitHub OAuth",
+    () => request("/api/auth/signin", { method: "POST" }),
+    { status: 302, locationIncludes: "/auth/v1/authorize?provider=github" },
   ],
   [
-    "signin rejects wrong password",
-    () => request("/api/auth/signin", { method: "POST", form: { email, password: "wrong" } }),
+    "callback without code returns to signin with error",
+    () => request("/api/auth/callback"),
     { status: 302, location: "/auth/signin?error=" },
   ],
-  [
-    "signin accepts correct password",
-    () => request("/api/auth/signin", { method: "POST", form: { email, password } }),
-    { status: 302, location: "/" },
-  ],
-  ["dashboard renders for signed-in user", () => request("/dashboard"), { status: 200 }],
-  ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
-  ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
+  ["signout redirects home", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
 ];
 
 let failed = 0;
@@ -63,11 +58,12 @@ for (const [name, run, expected] of steps) {
   const actual = await run();
   const ok =
     actual.status === expected.status &&
-    (expected.location === undefined || actual.location.startsWith(expected.location));
+    (expected.location === undefined || actual.location.startsWith(expected.location)) &&
+    (expected.locationIncludes === undefined || actual.location.includes(expected.locationIncludes));
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}  -> ${actual.status} ${actual.location}`);
   if (!ok) {
     failed++;
-    console.log(`      expected ${expected.status} ${expected.location ?? ""}`);
+    console.log(`      expected ${expected.status} ${expected.location ?? expected.locationIncludes ?? ""}`);
   }
 }
 

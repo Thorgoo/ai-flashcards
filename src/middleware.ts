@@ -1,5 +1,6 @@
 import { defineMiddleware } from "astro:middleware";
 import { createClient } from "@/lib/supabase";
+import { isEmailAllowed } from "@/lib/allowlist";
 
 const PROTECTED_ROUTES = ["/dashboard"];
 
@@ -10,7 +11,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    context.locals.user = user ?? null;
+    // Removing an address from ALLOWED_EMAILS revokes access on the next request.
+    if (user && !isEmailAllowed(user.email)) {
+      await supabase.auth.signOut();
+      context.locals.user = null;
+    } else {
+      context.locals.user = user ?? null;
+    }
   } else {
     context.locals.user = null;
   }
