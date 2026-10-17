@@ -230,18 +230,18 @@ Migracja jest addytywna (zmienia tylko domyślne uprawnienia dla przyszłych obi
 
 #### Automated
 
-- [x] 1.1 Migration file exists under `supabase/migrations/` and lint passes: `npm run lint`
-- [x] 1.2 Build passes: `npm run build`
+- [x] 1.1 Migration file exists under `supabase/migrations/` and lint passes: `npm run lint` — 5034728
+- [x] 1.2 Build passes: `npm run build` — 5034728
 
 #### Manual
 
-- [x] 1.3 README section „Database migrations” reads correctly and names `db push` as a human step
+- [x] 1.3 README section „Database migrations” reads correctly and names `db push` as a human step — 5034728
 
 ### Phase 2: Testy izolacji w pgTAP + CI
 
 #### Automated
 
-- [ ] 2.1 Lint passes: `npm run lint`
+- [x] 2.1 Lint passes: `npm run lint`
 - [ ] 2.2 CI job `smoke` passes on the PR, including the `Database tests` step with both test files reported as ok
 
 #### Manual
