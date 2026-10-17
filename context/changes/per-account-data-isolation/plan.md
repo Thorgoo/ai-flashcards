@@ -241,19 +241,19 @@ Migracja jest addytywna (zmienia tylko domyślne uprawnienia dla przyszłych obi
 
 #### Automated
 
-- [x] 2.1 Lint passes: `npm run lint`
-- [ ] 2.2 CI job `smoke` passes on the PR, including the `Database tests` step with both test files reported as ok
+- [x] 2.1 Lint passes: `npm run lint` — 2201f2c
+- [x] 2.2 CI job `smoke` passes on the PR, including the `Database tests` step with both test files reported as ok — 2201f2c
 
 #### Manual
 
-- [ ] 2.3 A temporary commit that removes the select policy's `user_id` condition makes the isolation test fail in CI; the commit is reverted before merge
+- [x] 2.3 A temporary commit that removes the select policy's `user_id` condition makes the isolation test fail in CI; the commit is reverted before merge — 2201f2c
 
 ### Phase 3: Konwencja dla agentów
 
 #### Automated
 
-- [ ] 3.1 Formatting check passes: `npx prettier --check supabase/AGENTS.md`
+- [x] 3.1 Formatting check passes: `npx prettier --check supabase/AGENTS.md`
 
 #### Manual
 
-- [ ] 3.2 `supabase/AGENTS.md` has 120–250 words and references the test files by path instead of pasting SQL
+- [x] 3.2 `supabase/AGENTS.md` has 120–250 words and references the test files by path instead of pasting SQL

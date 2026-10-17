@@ -39,20 +39,20 @@ Osoba ucząca się zawodowo kilku tematów naraz zdobywa wiedzę ad-hoc (np. w r
 
 ## At a glance
 
-| ID   | Change ID                       | Outcome (user can …)                                                                                                                      | Prerequisites | PRD refs                                                              | Status   |
-| ---- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------- | --------------------------------------------------------------------- | -------- |
-| F-01 | per-account-data-isolation      | (foundation) dane są przypisane do konta i niewidoczne dla innych kont, ze sprawdzonym testem izolacji                                    | —             | Access Control, NFR (dane widoczne tylko dla właściciela), Guardrails | ready    |
-| F-02 | ai-call-guardrails              | (foundation) jedna ścieżka wywołań AI z walidacją wyniku, limitami dziennymi i podstawianymi odpowiedziami do testów                      | F-01          | FR-028, NFR (limity 20/100 dziennie), NFR (brak wrażenia zawieszenia) | proposed |
-| S-01 | allowlisted-oauth-login         | user can zalogować się przez OAuth (tylko adresy z allowlisty) i wylogować; publiczna rejestracja znika                                   | —             | FR-001, FR-002                                                        | done     |
-| S-02 | topic-with-confirmed-subtopics  | user can utworzyć temat, poprawić wygenerowaną przez AI listę podtematów z typem treści i ją zatwierdzić                                  | S-01, F-02    | US-01, FR-003, FR-004, FR-005, FR-006, FR-028                         | proposed |
-| S-03 | diagnostic-quiz-by-subtopic     | user can rozwiązać quiz diagnostyczny z opcją „nie wiem” i zobaczyć wynik per podtemat                                                    | S-02          | US-01, FR-008, FR-009, FR-010                                         | proposed |
-| S-04 | first-weak-subtopic-batch       | user can dostać partię fiszek z najsłabszych podtematów, czytać „więcej” i usuwać złe fiszki                                              | S-03          | US-01, FR-011, FR-012, FR-013, FR-028                                 | proposed |
-| S-05 | multiple-choice-study-session   | user can uczyć się zaległych fiszek w formacie A/B/C/D z natychmiastowym sprawdzeniem i harmonogramem powrotów                            | S-04          | US-01, FR-014, FR-015                                                 | proposed |
-| S-06 | ai-graded-open-answers          | user can odpowiadać otwarcie, dostać ocenę AI i opanować fiszkę po dwóch poprawnych odpowiedziach w różne dni                             | S-05          | US-01, FR-015, FR-016, FR-017, FR-018, FR-028                         | proposed |
-| S-07 | next-batch-and-subtopic-mastery | user can zobaczyć opanowanie per podtemat i po 80% partii wygenerować kolejną ze słabych, nieopanowanych podtematów                       | S-06          | US-01, FR-019, FR-020                                                 | proposed |
-| S-08 | home-screen-and-topic-archive   | user can zobaczyć ekran główny z zaległymi fiszkami i datą ostatniej sesji per temat oraz zmienić nazwę, zarchiwizować i przywrócić temat | S-05          | FR-007, FR-021                                                        | proposed |
-| S-09 | daily-streak                    | user can widzieć licznik serii dni nauki                                                                                                  | S-05          | FR-023                                                                | proposed |
-| S-10 | badges                          | user can zdobywać odznaki za serię dni, opanowanie tematu i liczbę opanowanych fiszek oraz je przeglądać                                  | S-07, S-09    | FR-024, FR-025, FR-026, FR-027                                        | proposed |
+| ID   | Change ID                       | Outcome (user can …)                                                                                                                      | Prerequisites | PRD refs                                                              | Status      |
+| ---- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------- | --------------------------------------------------------------------- | ----------- |
+| F-01 | per-account-data-isolation      | (foundation) dane są przypisane do konta i niewidoczne dla innych kont, ze sprawdzonym testem izolacji                                    | —             | Access Control, NFR (dane widoczne tylko dla właściciela), Guardrails | in-progress |
+| F-02 | ai-call-guardrails              | (foundation) jedna ścieżka wywołań AI z walidacją wyniku, limitami dziennymi i podstawianymi odpowiedziami do testów                      | F-01          | FR-028, NFR (limity 20/100 dziennie), NFR (brak wrażenia zawieszenia) | proposed    |
+| S-01 | allowlisted-oauth-login         | user can zalogować się przez OAuth (tylko adresy z allowlisty) i wylogować; publiczna rejestracja znika                                   | —             | FR-001, FR-002                                                        | done        |
+| S-02 | topic-with-confirmed-subtopics  | user can utworzyć temat, poprawić wygenerowaną przez AI listę podtematów z typem treści i ją zatwierdzić                                  | S-01, F-02    | US-01, FR-003, FR-004, FR-005, FR-006, FR-028                         | proposed    |
+| S-03 | diagnostic-quiz-by-subtopic     | user can rozwiązać quiz diagnostyczny z opcją „nie wiem” i zobaczyć wynik per podtemat                                                    | S-02          | US-01, FR-008, FR-009, FR-010                                         | proposed    |
+| S-04 | first-weak-subtopic-batch       | user can dostać partię fiszek z najsłabszych podtematów, czytać „więcej” i usuwać złe fiszki                                              | S-03          | US-01, FR-011, FR-012, FR-013, FR-028                                 | proposed    |
+| S-05 | multiple-choice-study-session   | user can uczyć się zaległych fiszek w formacie A/B/C/D z natychmiastowym sprawdzeniem i harmonogramem powrotów                            | S-04          | US-01, FR-014, FR-015                                                 | proposed    |
+| S-06 | ai-graded-open-answers          | user can odpowiadać otwarcie, dostać ocenę AI i opanować fiszkę po dwóch poprawnych odpowiedziach w różne dni                             | S-05          | US-01, FR-015, FR-016, FR-017, FR-018, FR-028                         | proposed    |
+| S-07 | next-batch-and-subtopic-mastery | user can zobaczyć opanowanie per podtemat i po 80% partii wygenerować kolejną ze słabych, nieopanowanych podtematów                       | S-06          | US-01, FR-019, FR-020                                                 | proposed    |
+| S-08 | home-screen-and-topic-archive   | user can zobaczyć ekran główny z zaległymi fiszkami i datą ostatniej sesji per temat oraz zmienić nazwę, zarchiwizować i przywrócić temat | S-05          | FR-007, FR-021                                                        | proposed    |
+| S-09 | daily-streak                    | user can widzieć licznik serii dni nauki                                                                                                  | S-05          | FR-023                                                                | proposed    |
+| S-10 | badges                          | user can zdobywać odznaki za serię dni, opanowanie tematu i liczbę opanowanych fiszek oraz je przeglądać                                  | S-07, S-09    | FR-024, FR-025, FR-026, FR-027                                        | proposed    |
 
 ## Streams
 
@@ -93,7 +93,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Przy celu „jakość” izolacja idzie przed pierwszą tabelą domenową, bo dopisywanie jej później do istniejących tabel jest łatwe do przeoczenia; ryzyko to przerośnięcie w „cały schemat z góry” — zakres kończy się na wzorcu i teście, tabele dochodzą w wycinkach.
-- **Status:** ready
+- **Status:** in-progress
 
 ### F-02: Bezpieczne wywołania AI
 
