@@ -1,7 +1,7 @@
 ---
 change_id: per-account-data-isolation
 title: Per account data isolation
-status: implementing
+status: implemented
 created: 2026-10-17
 updated: 2026-10-17
 archived_at: null

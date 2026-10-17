@@ -252,8 +252,8 @@ Migracja jest addytywna (zmienia tylko domyślne uprawnienia dla przyszłych obi
 
 #### Automated
 
-- [x] 3.1 Formatting check passes: `npx prettier --check supabase/AGENTS.md`
+- [x] 3.1 Formatting check passes: `npx prettier --check supabase/AGENTS.md` — d495e7e
 
 #### Manual
 
-- [x] 3.2 `supabase/AGENTS.md` has 120–250 words and references the test files by path instead of pasting SQL
+- [x] 3.2 `supabase/AGENTS.md` has 120–250 words and references the test files by path instead of pasting SQL — d495e7e
