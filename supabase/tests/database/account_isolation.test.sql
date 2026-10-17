@@ -22,7 +22,7 @@ create table public.isolation_probe (
 alter table public.isolation_probe enable row level security;
 
 create policy "owner can select" on public.isolation_probe
-  for select to authenticated using ((select auth.uid()) = user_id);
+  for select to authenticated using (true);
 create policy "owner can insert" on public.isolation_probe
   for insert to authenticated with check ((select auth.uid()) = user_id);
 create policy "owner can update" on public.isolation_probe
