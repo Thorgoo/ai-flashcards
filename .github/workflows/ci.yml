@@ -26,6 +26,11 @@ jobs:
 
   smoke:
     runs-on: ubuntu-latest
+    env:
+      # Dummy values: config.toml enables GitHub OAuth and every Supabase CLI command reads it;
+      # smoke only checks the redirect, never completes it
+      SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID: smoke-dummy
+      SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET: smoke-dummy
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,13 +42,11 @@ jobs:
           version: latest
       - run: npm ci
       - name: Start local Supabase
-        env:
-          # Dummy values: config.toml enables GitHub OAuth; smoke only checks the redirect, never completes it
-          SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID: smoke-dummy
-          SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET: smoke-dummy
         run: |
           supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,realtime,storage-api,postgres-meta,supavisor
           supabase status -o env | grep -E '^(API_URL|ANON_KEY)=' > supabase.env
+      - name: Database tests
+        run: supabase test db
       - name: Configure secrets for build and preview
         run: |
           source supabase.env

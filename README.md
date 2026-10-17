@@ -56,6 +56,8 @@ npm run dev
 - `npm run lint:fix` - Auto-fix ESLint issues
 - `npm run format` - Run Prettier
 - `npm run smoke` - Smoke test the auth flow against a running server (`BASE_URL`, defaults to `http://localhost:4321`)
+- `npm run db:reset` - Recreate the local database from `supabase/migrations/` (requires the local Supabase stack)
+- `npm run db:test` - Run the pgTAP database tests in `supabase/tests/` (requires the local Supabase stack)
 
 ## Project Structure
 
@@ -146,6 +148,21 @@ In the Supabase dashboard:
 | `/dashboard`         | Example protected page (redirects to `/auth/signin` if unauthenticated)    |
 
 Route protection is handled in `src/middleware.ts`. Add paths to the `PROTECTED_ROUTES` array there to require authentication. The middleware also signs out any session whose email is no longer in `ALLOWED_EMAILS`.
+
+## Database migrations
+
+Schema changes live in `supabase/migrations/` as timestamped SQL files. Every table must belong to an account — see `supabase/AGENTS.md`.
+
+1. Create a migration: `npx supabase migration new <name>`, then write the SQL.
+2. Apply it locally: `npm run db:reset` (rebuilds the local database from all migrations).
+3. Test it: `npm run db:test`. Both commands need the local Supabase stack (Docker); CI runs the database tests on every PR regardless.
+
+Production migrations are a **human step** — CI never touches the production database:
+
+1. Once per machine: `npx supabase link --project-ref <project-ref>`.
+2. Push pending migrations: `npx supabase db push`, then confirm with `npx supabase migration list`.
+
+Push before (or together with) merging code that depends on the new schema. Keep migrations backward compatible (expand first, contract in a later migration) so a Worker rollback never meets an incompatible schema, and never edit a migration that has already been pushed — add a new one instead.
 
 ## Deployment
 
