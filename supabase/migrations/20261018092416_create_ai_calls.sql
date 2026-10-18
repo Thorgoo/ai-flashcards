@@ -46,7 +46,7 @@ begin
     raise exception 'not signed in' using errcode = '42501';
   end if;
 
-  v_limit := case p_kind when 'generation' then 20 when 'grading' then 100 end;
+  v_limit := case p_kind when 'generation' then 21 when 'grading' then 100 end;
   if v_limit is null then
     raise exception 'unknown AI call kind: %', p_kind using errcode = '22023';
   end if;
