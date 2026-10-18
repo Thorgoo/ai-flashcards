@@ -37,7 +37,7 @@ create temporary view rls_guard_violations as
         'policy not limited to authenticated',
         exists (
           select 1 from pg_policy p
-          where p.polrelid = c.oid and p.polroles <> array['authenticated'::regrole::oid]
+          where p.polrelid = c.oid and p.polroles <> array(select oid from pg_roles where rolname = 'authenticated')
         )
       ),
       (
