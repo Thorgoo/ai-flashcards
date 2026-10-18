@@ -258,7 +258,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 1. **Jakie są dokładne progi odznak?** — kamienie milowe serii dni (FR-024) i łącznej liczby opanowanych fiszek (FR-026); np. 7/30/100 dni, 50/200 fiszek. Owner: użytkownik. Block: nie (S-10 może wystartować z progami tymczasowymi).
 2. **Jak dokładnie AI ma oceniać poprawność krótkiej odpowiedzi otwartej (FR-016)?** — tolerancja na parafrazę/niepełność, ewentualne „częściowo poprawne”. Owner: użytkownik. Block: nie (S-06 startuje od prostego pass/fail).
-3. **Co wyznacza granicę „dnia”** dla harmonogramu („następnego dnia”, „za 3 dni”, „osobne dni”), serii dni i limitów dziennych — strefa czasowa konta czy stała? Owner: użytkownik. Block: nie (dotyczy S-05, S-06, S-09, S-10, F-02; domyślna decyzja w pierwszym `/10x-plan`, który jej potrzebuje).
+3. **Co wyznacza granicę „dnia”** dla harmonogramu („następnego dnia”, „za 3 dni”, „osobne dni”), serii dni i limitów dziennych — strefa czasowa konta czy stała? Owner: użytkownik. Block: nie (dotyczy S-05, S-06, S-09, S-10, F-02; domyślna decyzja w pierwszym `/10x-plan`, który jej potrzebuje). **Rozstrzygnięte (F-02, 2026-10-18):** dzień = data kalendarzowa w strefie Europe/Warsaw, jedna strefa dla wszystkich kont (`begin_ai_call` w `supabase/migrations/`).
 
 ## Parked
 

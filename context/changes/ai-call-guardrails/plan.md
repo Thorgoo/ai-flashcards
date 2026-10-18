@@ -341,9 +341,9 @@ Migracja `create_ai_calls` jest addytywna (nowa tabela i dwie funkcje). Wycofani
 
 #### Automated
 
-- [ ] 3.1 Formatting check passes: `npx prettier --check src/lib/ai/AGENTS.md README.md .env.example context/foundation/roadmap.md`
+- [x] 3.1 Formatting check passes: `npx prettier --check src/lib/ai/AGENTS.md README.md .env.example context/foundation/roadmap.md`
 - [ ] 3.2 CI jobs `ci` (including `npm test`) and `smoke` (with `AI_MODE=fake`) pass on the PR
 
 #### Manual
 
-- [ ] 3.3 `src/lib/ai/AGENTS.md` has 120–250 words and references files by path instead of pasting code
+- [x] 3.3 `src/lib/ai/AGENTS.md` has 120–250 words and references files by path instead of pasting code
