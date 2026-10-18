@@ -1,10 +1,10 @@
 ---
 change_id: per-account-data-isolation
 title: Per account data isolation
-status: impl_reviewed
+status: archived
 created: 2026-10-17
 updated: 2026-10-18
-archived_at: null
+archived_at: 2026-10-18T07:50:10Z
 ---
 
 ## Notes
