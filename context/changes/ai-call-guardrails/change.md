@@ -1,7 +1,7 @@
 ---
 change_id: ai-call-guardrails
 title: Ai call guardrails
-status: impl_reviewed
+status: implemented
 created: 2026-10-18
 updated: 2026-10-18
 archived_at: null
