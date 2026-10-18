@@ -171,7 +171,7 @@ Every AI call goes through `getAi(supabase, user).call(...)` in `src/lib/ai/` �
 
 - **Local:** put `ANTHROPIC_API_KEY` in `.dev.vars` (and `.env`). To work without a key, set `AI_MODE=fake`: responses then come from `src/lib/ai/fixtures.ts`. Fake mode only works with the local Supabase stack (`SUPABASE_URL` on `localhost`/`127.0.0.1`); otherwise every AI call fails as not configured. CI runs the smoke job in fake mode.
 - **Production:** a **human step** — `npx wrangler secret put ANTHROPIC_API_KEY`. Leave `AI_MODE` unset (it defaults to `live`).
-- **Tests:** `npm test` runs the unit tests on a fake provider. One real call against the API is opt-in: `AI_LIVE_TEST=1 ANTHROPIC_API_KEY=… npx vitest run src/lib/ai/live.integration.test.ts`.
+- **Tests:** `npm test` runs the unit tests on a fake provider. One real call against the API is opt-in: `AI_LIVE_TEST=1 ANTHROPIC_API_KEY=… npx vitest run src/lib/ai/live.integration.test.ts` (bash); in PowerShell `$env:AI_LIVE_TEST="1"; $env:ANTHROPIC_API_KEY="…"; npx.cmd vitest run src/lib/ai/live.integration.test.ts` (`npx.cmd` avoids the script execution policy).
 
 ## Deployment
 

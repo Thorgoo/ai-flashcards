@@ -1,4 +1,5 @@
 <!-- IMPL-REVIEW-REPORT -->
+
 # Implementation Review: Ai call guardrails
 
 - **Plan**: context/changes/ai-call-guardrails/plan.md
@@ -10,14 +11,14 @@
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| Plan Adherence | WARNING |
-| Scope Discipline | PASS |
-| Safety & Quality | WARNING |
-| Architecture | PASS |
-| Pattern Consistency | PASS |
-| Success Criteria | WARNING |
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | WARNING |
+| Scope Discipline    | PASS    |
+| Safety & Quality    | WARNING |
+| Architecture        | PASS    |
+| Pattern Consistency | PASS    |
+| Success Criteria    | WARNING |
 
 Success criteria evidence: `npm test` (17 passed, 1 skipped), `npm run lint`, `npx astro check` (0 errors) and `npm run build` pass at a156de3. Manual 2.5 was run with a real key: `✓ returns schema-valid structured output`, 1336 ms. Break checks: removing the `stop_reason` check and `maxRetries: 2` both turned tests red. The Phase 1 RPC contract (`begin_ai_call` / `finish_ai_call`) matches `quota.ts`.
 

@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(13);
 
 insert into auth.users (id, email)
 values
@@ -67,6 +67,12 @@ select is(
   19,
   'yesterday''s calls and other accounts'' calls do not count'
 );
+select throws_ok(
+  $$ select public.begin_ai_call('grading', repeat('x', 101), 'test-model') $$,
+  '23514',
+  null,
+  'oversized task name is rejected'
+);
 
 select public.finish_ai_call(current_setting('test.a_call')::uuid, 'ok', null, 10, 1, 1);
 
@@ -89,15 +95,17 @@ select is(
   'owner records the outcome of its call'
 );
 
--- Anonymous callers cannot reserve calls.
+-- Anonymous callers cannot reach the limit functions at all (checked on the privilege
+-- itself, so the functions' own "not signed in" error cannot mask a wrong grant).
 reset role;
-set local role anon;
 
-select throws_ok(
-  $$ select public.begin_ai_call('generation', 'test', 'test-model') $$,
-  '42501',
-  null,
-  'anon cannot reserve an AI call'
+select ok(
+  not has_function_privilege('anon', 'public.begin_ai_call(text, text, text)', 'execute'),
+  'anon cannot execute begin_ai_call'
+);
+select ok(
+  not has_function_privilege('anon', 'public.finish_ai_call(uuid, text, text, integer, integer, integer)', 'execute'),
+  'anon cannot execute finish_ai_call'
 );
 
 select * from finish();
