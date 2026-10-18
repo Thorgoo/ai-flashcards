@@ -21,6 +21,15 @@ export default defineConfig({
       SUPABASE_KEY: envField.string({ context: "server", access: "secret", optional: true }),
       // Comma-separated emails allowed to sign in; unset means nobody can.
       ALLOWED_EMAILS: envField.string({ context: "server", access: "secret", optional: true }),
+      ANTHROPIC_API_KEY: envField.string({ context: "server", access: "secret", optional: true }),
+      // `fake` serves canned AI responses (src/lib/ai/fixtures.ts); allowed only with a local Supabase.
+      AI_MODE: envField.enum({
+        values: ["live", "fake"],
+        context: "server",
+        access: "secret",
+        optional: true,
+        default: "live",
+      }),
     },
   },
 });

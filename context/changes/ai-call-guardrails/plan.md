@@ -321,21 +321,21 @@ Migracja `create_ai_calls` jest addytywna (nowa tabela i dwie funkcje). Wycofani
 
 #### Automated
 
-- [x] 1.1 Migration file exists under `supabase/migrations/` and lint passes: `npm run lint`
-- [ ] 1.2 CI job `smoke` passes, with `Database tests` reporting `account_isolation`, `ai_calls` and `rls_guard` as ok
+- [x] 1.1 Migration file exists under `supabase/migrations/` and lint passes: `npm run lint` — d06ce88
+- [x] 1.2 CI job `smoke` passes, with `Database tests` reporting `account_isolation`, `ai_calls` and `rls_guard` as ok — d06ce88
 
 ### Phase 2: Moduł AI z testami jednostkowymi
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm test`
-- [ ] 2.2 Lint passes: `npm run lint`
-- [ ] 2.3 Type checking passes: `npx astro check`
-- [ ] 2.4 Build passes: `npm run build`
+- [x] 2.1 Unit tests pass: `npm test`
+- [x] 2.2 Lint passes: `npm run lint`
+- [x] 2.3 Type checking passes: `npx astro check`
+- [x] 2.4 Build passes: `npm run build`
 
 #### Manual
 
-- [ ] 2.5 With a real key, `AI_LIVE_TEST=1 npx vitest run src/lib/ai/live.integration.test.ts` returns schema-valid data; note the observed latency
+- [x] 2.5 With a real key, `AI_LIVE_TEST=1 npx vitest run src/lib/ai/live.integration.test.ts` returns schema-valid data; note the observed latency
 
 ### Phase 3: CI, sekrety i dokumentacja
 
