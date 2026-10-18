@@ -162,7 +162,7 @@ Production migrations are a **human step** — CI never touches the production d
 1. Once per machine: `npx supabase link --project-ref <project-ref>`.
 2. Push pending migrations: `npx supabase db push`, then confirm with `npx supabase migration list`.
 
-Push before (or together with) merging code that depends on the new schema. Keep migrations backward compatible (expand first, contract in a later migration) so a Worker rollback never meets an incompatible schema, and never edit a migration that has already been pushed — add a new one instead.
+Push before (or together with) merging code that depends on the new schema. Keep migrations backward compatible (expand first, contract in a later migration) so a Worker rollback never meets an incompatible schema, and never edit a migration that is already on `main` or pushed — add a new one instead.
 
 ## Deployment
 

@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(10);
 
 -- Two accounts (email sign-up is disabled, so users are inserted directly).
 insert into auth.users (id, email)
@@ -30,6 +30,9 @@ create policy "owner can update" on public.isolation_probe
 create policy "owner can delete" on public.isolation_probe
   for delete to authenticated using ((select auth.uid()) = user_id);
 
+-- A function in `public`, to check function privileges from the migration.
+create function public.isolation_probe_fn() returns int language sql as $$ select 1 $$;
+
 -- Account A writes a row without naming the owner.
 set local role authenticated;
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
@@ -42,6 +45,7 @@ select is(
   'user_id defaults to the signed-in account'
 );
 select is((select count(*) from public.isolation_probe), 1::bigint, 'account A sees its own row');
+select lives_ok($$ select public.isolation_probe_fn() $$, 'authenticated can execute public functions');
 
 -- Account B cannot see, change, remove or forge A's rows.
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
@@ -80,6 +84,12 @@ select throws_ok(
   '42501',
   null,
   'anon has no access to account tables'
+);
+select throws_ok(
+  $$ select public.isolation_probe_fn() $$,
+  '42501',
+  null,
+  'anon cannot execute public functions'
 );
 
 select * from finish();
