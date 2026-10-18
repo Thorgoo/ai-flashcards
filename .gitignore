@@ -35,4 +35,4 @@ pnpm-debug.log*
 .agents/
 .10x-cli.json
 skills-lock.json
-CLAUDE.md
+/CLAUDE.md
