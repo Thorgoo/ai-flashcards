@@ -8,6 +8,10 @@ select plan(2);
 -- Tables deliberately exempt from the pattern. Each entry needs a reason, e.g.
 -- ('some_global_lookup') -- shared reference data, read-only for everyone
 create temporary table rls_guard_exceptions (table_name text primary key);
+insert into rls_guard_exceptions (table_name)
+values
+  -- Append-only AI limit counter: owners only read; writes go through begin_ai_call / finish_ai_call
+  ('ai_calls');
 
 create temporary view rls_guard_violations as
   select c.relname as table_name, reason
