@@ -109,17 +109,87 @@ describe("callAi", () => {
     expect(result).toMatchObject({ ok: true, data: { answer: "42" } });
   });
 
-  it("sends the provider a JSON schema derived from the zod schema", async () => {
+  it("sends the provider a JSON schema derived from the zod schema and low effort by default", async () => {
     const { quota } = memoryQuota();
     let sent: Record<string, unknown> | undefined;
+    let effort: string | undefined;
     const provider: AiProvider = {
       complete(providerRequest) {
         sent = providerRequest.jsonSchema;
+        effort = providerRequest.effort;
         return Promise.resolve({ output: { answer: "42" }, stopReason: "end_turn" });
       },
     };
     await callAi({ provider, quota, userId: "a" }, request);
 
     expect(sent).toMatchObject({ type: "object", properties: { answer: { type: "string" } } });
+    expect(effort).toBe("low");
+  });
+
+  it("rejects a schema the provider cannot take without using the limit", async () => {
+    const { quota, calls } = memoryQuota();
+    const result = await callAi(
+      { provider: fake(() => ({ when: "today" })), quota, userId: "a" },
+      { ...request, schema: z.object({ when: z.date() }) },
+    );
+
+    expect(result).toMatchObject({ ok: false, error: { code: "ai_not_configured", retryable: false } });
+    expect(calls).toHaveLength(0);
+  });
+
+  it("fails a task without a fake fixture even when the schema accepts nothing", async () => {
+    const { quota } = memoryQuota();
+    const result = await callAi(
+      { provider: createFakeProvider({}), quota, userId: "a" },
+      { ...request, schema: z.object({ answer: z.string() }).optional() },
+    );
+
+    expect(result).toMatchObject({ ok: false, error: { code: "ai_invalid_output" } });
+  });
+
+  it("awaits async fake fixtures and can simulate invalid output", async () => {
+    const { quota } = memoryQuota();
+    const ok = await callAi({ provider: fake(() => Promise.resolve({ answer: "42" })), quota, userId: "a" }, request);
+    const invalid = await callAi(
+      {
+        provider: fake(() => {
+          throw new FakeAiFailure("ai_invalid_output");
+        }),
+        quota,
+        userId: "a",
+      },
+      request,
+    );
+
+    expect(ok).toMatchObject({ ok: true, data: { answer: "42" } });
+    expect(invalid).toMatchObject({ ok: false, error: { code: "ai_invalid_output" } });
+  });
+
+  it("treats a refusal as invalid output", async () => {
+    const { quota } = memoryQuota();
+    const provider: AiProvider = {
+      complete: () => Promise.resolve({ output: undefined, stopReason: "refusal" }),
+    };
+    const result = await callAi({ provider, quota, userId: "a" }, request);
+
+    expect(result).toMatchObject({ ok: false, error: { code: "ai_invalid_output" } });
+  });
+
+  it("reports a failing limit check as unavailable without calling the provider", async () => {
+    let providerCalls = 0;
+    const provider: AiProvider = {
+      complete() {
+        providerCalls++;
+        return Promise.resolve({ output: { answer: "42" }, stopReason: "end_turn" });
+      },
+    };
+    const quota: AiQuota = {
+      begin: () => Promise.reject(new Error("db down")),
+      finish: () => Promise.resolve(),
+    };
+    const result = await callAi({ provider, quota, userId: "a" }, request);
+
+    expect(result).toMatchObject({ ok: false, error: { code: "ai_unavailable", retryable: true } });
+    expect(providerCalls).toBe(0);
   });
 });

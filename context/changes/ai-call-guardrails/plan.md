@@ -328,14 +328,14 @@ Migracja `create_ai_calls` jest addytywna (nowa tabela i dwie funkcje). Wycofani
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test`
-- [x] 2.2 Lint passes: `npm run lint`
-- [x] 2.3 Type checking passes: `npx astro check`
-- [x] 2.4 Build passes: `npm run build`
+- [x] 2.1 Unit tests pass: `npm test` — a156de3
+- [x] 2.2 Lint passes: `npm run lint` — a156de3
+- [x] 2.3 Type checking passes: `npx astro check` — a156de3
+- [x] 2.4 Build passes: `npm run build` — a156de3
 
 #### Manual
 
-- [x] 2.5 With a real key, `AI_LIVE_TEST=1 npx vitest run src/lib/ai/live.integration.test.ts` returns schema-valid data; note the observed latency
+- [x] 2.5 With a real key, `AI_LIVE_TEST=1 npx vitest run src/lib/ai/live.integration.test.ts` returns schema-valid data; note the observed latency — a156de3
 
 ### Phase 3: CI, sekrety i dokumentacja
 

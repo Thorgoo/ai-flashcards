@@ -18,7 +18,7 @@ export interface Ai {
 export function getAi(supabase: SupabaseClient, user: User | null): Ai {
   const mode = resolveAiMode(AI_MODE, SUPABASE_URL);
   if (mode === "invalid") {
-    logAiError(`AI_MODE=${AI_MODE} is not allowed with SUPABASE_URL=${SUPABASE_URL ?? ""}`);
+    logAiError(`AI_MODE=${AI_MODE} needs a local Supabase (localhost or 127.0.0.1)`);
     return { mode: "live", call: () => Promise.resolve(aiError("ai_not_configured")) };
   }
 

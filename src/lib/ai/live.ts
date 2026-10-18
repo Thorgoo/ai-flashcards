@@ -1,8 +1,11 @@
 import Anthropic, {
-  APIConnectionError,
+  APIError,
   APIConnectionTimeoutError,
   AuthenticationError,
+  BadRequestError,
+  NotFoundError,
   PermissionDeniedError,
+  UnprocessableEntityError,
 } from "@anthropic-ai/sdk";
 import { AiProviderError, type AiProvider } from "./call";
 import { logAiError } from "./errors";
@@ -30,7 +33,7 @@ export function createLiveProvider(options: { apiKey: string | undefined; fetch?
             max_tokens: request.maxTokens,
             system: request.system,
             messages: [{ role: "user", content: request.prompt }],
-            output_config: { effort: "low", format: { type: "json_schema", schema: request.jsonSchema } },
+            output_config: { effort: request.effort, format: { type: "json_schema", schema: request.jsonSchema } },
           },
           { timeout: request.timeoutMs },
         );
@@ -58,12 +61,27 @@ function toProviderError(error: unknown): AiProviderError {
   if (error instanceof APIConnectionTimeoutError) {
     return new AiProviderError("ai_timeout");
   }
-  if (error instanceof AuthenticationError || error instanceof PermissionDeniedError) {
-    logAiError("provider rejected the API key", error.message);
+  // Rejected key or a request the API can't accept (schema, model): retrying won't help.
+  if (
+    error instanceof AuthenticationError ||
+    error instanceof PermissionDeniedError ||
+    error instanceof BadRequestError ||
+    error instanceof NotFoundError ||
+    error instanceof UnprocessableEntityError
+  ) {
+    logAiError(`provider rejected the request (${error.status})`, {
+      message: error.message,
+      requestID: error.requestID,
+    });
     return new AiProviderError("ai_not_configured");
   }
-  if (!(error instanceof APIConnectionError)) {
-    logAiError("provider request failed", error);
+  if (error instanceof APIError) {
+    logAiError(`provider request failed (${error.status ?? "no status"})`, {
+      message: error.message,
+      requestID: error.requestID,
+    });
+  } else {
+    logAiError("provider request failed", error instanceof Error ? error.message : String(error));
   }
   return new AiProviderError("ai_unavailable");
 }

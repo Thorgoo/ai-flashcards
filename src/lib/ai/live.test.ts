@@ -10,6 +10,7 @@ const request: AiProviderRequest = {
   jsonSchema: { type: "object", properties: { answer: { type: "string" } }, additionalProperties: false },
   maxTokens: 100,
   timeoutMs: 1_000,
+  effort: "low",
 };
 
 function json(status: number, body: unknown): Response {
@@ -63,15 +64,15 @@ describe("createLiveProvider", () => {
     });
   });
 
-  it("sends the JSON schema and low effort in output_config", async () => {
+  it("sends the JSON schema and the requested effort in output_config", async () => {
     let body: Record<string, unknown> = {};
     const stub = stubFetch((init) => {
       body = JSON.parse(init?.body as string) as Record<string, unknown>;
       return Promise.resolve(json(200, message('{"answer":"42"}')));
     });
-    await createLiveProvider({ apiKey: "key", fetch: stub.fetch }).complete(request);
+    await createLiveProvider({ apiKey: "key", fetch: stub.fetch }).complete({ ...request, effort: "high" });
 
-    expect(body.output_config).toEqual({ effort: "low", format: { type: "json_schema", schema: request.jsonSchema } });
+    expect(body.output_config).toEqual({ effort: "high", format: { type: "json_schema", schema: request.jsonSchema } });
   });
 
   it("maps server errors to ai_unavailable without retrying", async () => {
@@ -122,5 +123,41 @@ describe("createLiveProvider", () => {
     const response = await createLiveProvider({ apiKey: "key", fetch: stub.fetch }).complete(request);
 
     expect(response).toMatchObject({ output: undefined, stopReason: "max_tokens" });
+  });
+
+  it("maps a request the API rejects (400) to ai_not_configured", async () => {
+    const stub = stubFetch(() =>
+      Promise.resolve(json(400, { type: "error", error: { type: "invalid_request_error", message: "bad schema" } })),
+    );
+
+    expect(await providerError(createLiveProvider({ apiKey: "key", fetch: stub.fetch }).complete(request))).toBe(
+      "ai_not_configured",
+    );
+  });
+
+  it("maps 403 to ai_not_configured and 429 to ai_unavailable, one request each", async () => {
+    const forbidden = stubFetch(() =>
+      Promise.resolve(json(403, { type: "error", error: { type: "permission_error", message: "no" } })),
+    );
+    const limited = stubFetch(() =>
+      Promise.resolve(json(429, { type: "error", error: { type: "rate_limit_error", message: "slow down" } })),
+    );
+
+    expect(await providerError(createLiveProvider({ apiKey: "key", fetch: forbidden.fetch }).complete(request))).toBe(
+      "ai_not_configured",
+    );
+    expect(await providerError(createLiveProvider({ apiKey: "key", fetch: limited.fetch }).complete(request))).toBe(
+      "ai_unavailable",
+    );
+    expect(limited.requests).toBe(1);
+  });
+
+  it("maps a network failure to ai_unavailable", async () => {
+    const stub = stubFetch(() => Promise.reject(new TypeError("fetch failed")));
+
+    expect(await providerError(createLiveProvider({ apiKey: "key", fetch: stub.fetch }).complete(request))).toBe(
+      "ai_unavailable",
+    );
+    expect(stub.requests).toBe(1);
   });
 });

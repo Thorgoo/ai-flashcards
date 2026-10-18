@@ -4,6 +4,8 @@ import { aiError, logAiError, type AiErrorCode, type AiResult } from "./errors";
 
 export type AiKind = "generation" | "grading";
 
+export type AiEffort = "low" | "medium" | "high";
+
 export const DEFAULT_MODEL = "claude-sonnet-5-5";
 
 const DEFAULT_TIMEOUT_MS: Record<AiKind, number> = { generation: 60_000, grading: 20_000 };
@@ -16,6 +18,7 @@ export interface AiProviderRequest {
   jsonSchema: Record<string, unknown>;
   maxTokens: number;
   timeoutMs: number;
+  effort: AiEffort;
 }
 
 export interface AiProviderResponse {
@@ -67,6 +70,8 @@ export interface AiRequest<T> {
   maxTokens: number;
   timeoutMs?: number;
   model?: string;
+  // Defaults to "low": these tasks need little reasoning, and more effort means a longer wait.
+  effort?: AiEffort;
 }
 
 export interface AiDeps {
@@ -84,6 +89,15 @@ export async function callAi<T>(deps: AiDeps, request: AiRequest<T>): Promise<Ai
   }
 
   const model = request.model ?? DEFAULT_MODEL;
+  let jsonSchema: Record<string, unknown>;
+  try {
+    jsonSchema = zodOutputFormat(request.schema).schema;
+  } catch (error) {
+    // A schema the provider can't take is a code bug: don't spend the user's limit on it.
+    logAiError(`schema for task ${request.task} cannot be sent to the provider`, error);
+    return aiError("ai_not_configured");
+  }
+
   let reservation: { callId: string; remaining: number };
   try {
     reservation = await deps.quota.begin(request.kind, request.task, model);
@@ -105,9 +119,10 @@ export async function callAi<T>(deps: AiDeps, request: AiRequest<T>): Promise<Ai
       model,
       system: request.system,
       prompt: request.prompt,
-      jsonSchema: zodOutputFormat(request.schema).schema,
+      jsonSchema,
       maxTokens: request.maxTokens,
       timeoutMs: request.timeoutMs ?? DEFAULT_TIMEOUT_MS[request.kind],
+      effort: request.effort ?? "low",
     });
     usage = response.usage;
     // Structured outputs do not hold when the model stops early, and they cannot
@@ -118,7 +133,9 @@ export async function callAi<T>(deps: AiDeps, request: AiRequest<T>): Promise<Ai
     } else {
       errorCode = "ai_invalid_output";
       logAiError(
-        `invalid output for task ${request.task}`,
+        response.stopReason === "refusal"
+          ? `model refused task ${request.task}`
+          : `invalid output for task ${request.task}`,
         parsed?.error.issues ?? `stop_reason ${response.stopReason}`,
       );
     }

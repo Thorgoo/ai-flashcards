@@ -1,4 +1,5 @@
 import { AiProviderError, type AiProvider, type AiProviderErrorCode, type AiProviderRequest } from "./call";
+import { logAiError } from "./errors";
 
 export type FakeFixture = (request: AiProviderRequest) => unknown;
 
@@ -12,29 +13,23 @@ export class FakeAiFailure extends Error {
 // caller see a specific AI error; limits and validation still apply as in live mode.
 export function createFakeProvider(fixtures: Partial<Record<string, FakeFixture>>): AiProvider {
   return {
-    complete(request) {
+    async complete(request) {
       const fixture = fixtures[request.task];
       if (fixture === undefined) {
-        return Promise.resolve({
-          output: undefined,
-          stopReason: "end_turn",
-          usage: { inputTokens: 0, outputTokens: 0 },
-        });
+        // Never a success, whatever the schema accepts.
+        logAiError(`no fake fixture for task ${request.task}`);
+        return { output: undefined, stopReason: "missing_fixture" };
       }
       try {
-        return Promise.resolve({
-          output: fixture(request),
-          stopReason: "end_turn",
-          usage: { inputTokens: 0, outputTokens: 0 },
-        });
+        return { output: await fixture(request), stopReason: "end_turn", usage: { inputTokens: 0, outputTokens: 0 } };
       } catch (error) {
         if (error instanceof FakeAiFailure) {
           if (error.code === "ai_invalid_output") {
-            return Promise.resolve({ output: undefined, stopReason: "max_tokens" });
+            return { output: undefined, stopReason: "max_tokens" };
           }
-          return Promise.reject(new AiProviderError(error.code));
+          throw new AiProviderError(error.code);
         }
-        return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+        throw error;
       }
     },
   };
