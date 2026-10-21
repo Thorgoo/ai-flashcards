@@ -5,12 +5,19 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(2);
 
--- Tables deliberately exempt from the pattern. Each entry needs a reason, e.g.
--- ('some_global_lookup') -- shared reference data, read-only for everyone
-create temporary table rls_guard_exceptions (table_name text primary key);
+-- Deliberate exemptions: each row waives one check (the exact reason text below) for one
+-- table, with a comment saying why, e.g.
+-- ('some_global_lookup', 'no user_id uuid not null column') -- shared reference data
+create temporary table rls_guard_exceptions (table_name text, reason text, primary key (table_name, reason));
+insert into rls_guard_exceptions (table_name, reason)
+values
+  -- Append-only AI limit counter: owners only read; writes go through begin_ai_call / finish_ai_call
+  ('ai_calls', 'no policy for every command');
 
 create temporary view rls_guard_violations as
-  select c.relname as table_name, reason
+select v.table_name, v.reason
+from (
+  select c.relname::text as table_name, reason
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
   cross join lateral (
@@ -55,7 +62,6 @@ create temporary view rls_guard_violations as
   ) as checks(reason, failed)
   where n.nspname = 'public'
     and c.relkind in ('r', 'p')
-    and c.relname not in (select table_name from rls_guard_exceptions)
     and failed
   union all
   -- Views run with their owner's rights (bypassing RLS) unless security_invoker is set;
@@ -65,11 +71,14 @@ create temporary view rls_guard_violations as
   join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public'
     and c.relkind in ('v', 'm')
-    and c.relname not in (select table_name from rls_guard_exceptions)
     and not (
       c.relkind = 'v'
       and exists (select 1 from unnest(c.reloptions) as o where o ~* '^security_invoker=(true|on|1|yes)$')
-    );
+    )
+) as v
+where not exists (
+  select 1 from rls_guard_exceptions e where e.table_name = v.table_name and e.reason = v.reason
+);
 
 -- Self-test: the guard flags broken tables and accepts one that follows the pattern.
 savepoint guard_self_test;
@@ -99,17 +108,19 @@ create view public.guard_definer_view as select user_id from public.guard_owned;
 create view public.guard_invoker_view with (security_invoker = true) as select user_id from public.guard_owned;
 create materialized view public.guard_matview as select user_id from public.guard_owned;
 
+-- An exemption waives only the named check; the table's other violations still count.
+insert into rls_guard_exceptions (table_name, reason) values ('guard_no_pattern', 'RLS disabled');
+
 select set_eq(
   $$ select table_name::text || ': ' || reason from rls_guard_violations $$,
   $$ values
-    ('guard_no_pattern: RLS disabled'),
     ('guard_no_pattern: no user_id uuid not null column'),
     ('guard_no_pattern: no policy for every command'),
     ('guard_loose_policy: policy not limited to authenticated'),
     ('guard_loose_policy: policy does not compare auth.uid() to user_id'),
     ('guard_definer_view: view without security_invoker'),
     ('guard_matview: materialized view bypasses RLS') $$,
-  'guard flags tables that break the pattern and accepts one that follows it'
+  'guard flags tables that break the pattern, honours exemptions per check and accepts a correct table'
 );
 
 rollback to savepoint guard_self_test;

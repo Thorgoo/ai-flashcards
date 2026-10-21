@@ -3,7 +3,7 @@ project: AI Flashcards
 version: 1
 status: draft
 created: 2026-10-05
-updated: 2026-10-17
+updated: 2026-10-18
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -41,8 +41,8 @@ Osoba ucząca się zawodowo kilku tematów naraz zdobywa wiedzę ad-hoc (np. w r
 
 | ID   | Change ID                       | Outcome (user can …)                                                                                                                      | Prerequisites | PRD refs                                                              | Status      |
 | ---- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------- | --------------------------------------------------------------------- | ----------- |
-| F-01 | per-account-data-isolation      | (foundation) dane są przypisane do konta i niewidoczne dla innych kont, ze sprawdzonym testem izolacji                                    | —             | Access Control, NFR (dane widoczne tylko dla właściciela), Guardrails | in-progress |
-| F-02 | ai-call-guardrails              | (foundation) jedna ścieżka wywołań AI z walidacją wyniku, limitami dziennymi i podstawianymi odpowiedziami do testów                      | F-01          | FR-028, NFR (limity 20/100 dziennie), NFR (brak wrażenia zawieszenia) | proposed    |
+| F-01 | per-account-data-isolation      | (foundation) dane są przypisane do konta i niewidoczne dla innych kont, ze sprawdzonym testem izolacji                                    | —             | Access Control, NFR (dane widoczne tylko dla właściciela), Guardrails | done        |
+| F-02 | ai-call-guardrails              | (foundation) jedna ścieżka wywołań AI z walidacją wyniku, limitami dziennymi i podstawianymi odpowiedziami do testów                      | F-01          | FR-028, NFR (limity 20/100 dziennie), NFR (brak wrażenia zawieszenia) | in-progress |
 | S-01 | allowlisted-oauth-login         | user can zalogować się przez OAuth (tylko adresy z allowlisty) i wylogować; publiczna rejestracja znika                                   | —             | FR-001, FR-002                                                        | done        |
 | S-02 | topic-with-confirmed-subtopics  | user can utworzyć temat, poprawić wygenerowaną przez AI listę podtematów z typem treści i ją zatwierdzić                                  | S-01, F-02    | US-01, FR-003, FR-004, FR-005, FR-006, FR-028                         | proposed    |
 | S-03 | diagnostic-quiz-by-subtopic     | user can rozwiązać quiz diagnostyczny z opcją „nie wiem” i zobaczyć wynik per podtemat                                                    | S-02          | US-01, FR-008, FR-009, FR-010                                         | proposed    |
@@ -93,7 +93,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Przy celu „jakość” izolacja idzie przed pierwszą tabelą domenową, bo dopisywanie jej później do istniejących tabel jest łatwe do przeoczenia; ryzyko to przerośnięcie w „cały schemat z góry” — zakres kończy się na wzorcu i teście, tabele dochodzą w wycinkach.
-- **Status:** in-progress
+- **Status:** done
 
 ### F-02: Bezpieczne wywołania AI
 
@@ -107,7 +107,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Który dostawca i model AI (`tech-stack.md` go nie wskazuje) i czy odpowiedź mieści się w ograniczeniach środowiska uruchomieniowego (`infrastructure.md`: limit CPU, przerwanie żądania przy rozłączeniu klienta)? — Owner: user. Block: no.
 - **Risk:** Musi poprzedzać pierwsze wywołanie AI, bo zapis „wszystko albo nic” i limity są trudne do dołożenia do kilku istniejących wywołań; znane ryzyko z `infrastructure.md` — zablokowany telefon przerywa generowanie, a próba i tak zużywa limit.
-- **Status:** proposed
+- **Status:** in-progress
 
 ## Slices
 
@@ -258,7 +258,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 1. **Jakie są dokładne progi odznak?** — kamienie milowe serii dni (FR-024) i łącznej liczby opanowanych fiszek (FR-026); np. 7/30/100 dni, 50/200 fiszek. Owner: użytkownik. Block: nie (S-10 może wystartować z progami tymczasowymi).
 2. **Jak dokładnie AI ma oceniać poprawność krótkiej odpowiedzi otwartej (FR-016)?** — tolerancja na parafrazę/niepełność, ewentualne „częściowo poprawne”. Owner: użytkownik. Block: nie (S-06 startuje od prostego pass/fail).
-3. **Co wyznacza granicę „dnia”** dla harmonogramu („następnego dnia”, „za 3 dni”, „osobne dni”), serii dni i limitów dziennych — strefa czasowa konta czy stała? Owner: użytkownik. Block: nie (dotyczy S-05, S-06, S-09, S-10, F-02; domyślna decyzja w pierwszym `/10x-plan`, który jej potrzebuje).
+3. **Co wyznacza granicę „dnia”** dla harmonogramu („następnego dnia”, „za 3 dni”, „osobne dni”), serii dni i limitów dziennych — strefa czasowa konta czy stała? Owner: użytkownik. Block: nie (dotyczy S-05, S-06, S-09, S-10, F-02; domyślna decyzja w pierwszym `/10x-plan`, który jej potrzebuje). **Rozstrzygnięte (F-02, 2026-10-18):** dzień = data kalendarzowa w strefie Europe/Warsaw, jedna strefa dla wszystkich kont (`begin_ai_call` w `supabase/migrations/`).
 
 ## Parked
 
@@ -281,3 +281,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 ## Done
 
 - **S-01: Logowanie przez OAuth z allowlistą** — done 2026-10-11 (issue #5, PR #16). GitHub OAuth + `ALLOWED_EMAILS`; rejestracja i logowanie hasłem usunięte.
+- **F-01: (foundation) istnieje powtarzalny sposób wprowadzania zmian schematu i wzorzec „wiersz należy do konta, inne konta go nie widzą”, potwierdzony automatycznym sprawdzeniem dwóch kont; żadne tabele domenowe poza minimalnym przykładem nie są jeszcze tworzone.** — Archived 2026-10-18 → `context/archive/2026-10-17-per-account-data-isolation/`. Lesson: —.

@@ -58,6 +58,7 @@ npm run dev
 - `npm run smoke` - Smoke test the auth flow against a running server (`BASE_URL`, defaults to `http://localhost:4321`)
 - `npm run db:reset` - Recreate the local database from `supabase/migrations/` (requires the local Supabase stack)
 - `npm run db:test` - Run the pgTAP database tests in `supabase/tests/` (requires the local Supabase stack)
+- `npm test` - Run the Vitest unit tests (`src/**/*.test.ts`)
 
 ## Project Structure
 
@@ -163,6 +164,14 @@ Production migrations are a **human step** — CI never touches the production d
 2. Push pending migrations: `npx supabase db push`, then confirm with `npx supabase migration list`.
 
 Push before (or together with) merging code that depends on the new schema. Keep migrations backward compatible (expand first, contract in a later migration) so a Worker rollback never meets an incompatible schema, and never edit a migration that is already on `main` or pushed — add a new one instead.
+
+## AI calls
+
+Every AI call goes through `getAi(supabase, user).call(...)` in `src/lib/ai/` — see `src/lib/ai/AGENTS.md`. Each call uses up the account's daily limit (20 generations / 100 gradings per calendar day in Europe/Warsaw, counted whether the call succeeds or not) and is logged in the `ai_calls` table.
+
+- **Local:** put `ANTHROPIC_API_KEY` in `.dev.vars` (and `.env`). To work without a key, set `AI_MODE=fake`: responses then come from `src/lib/ai/fixtures.ts`. Fake mode only works with the local Supabase stack (`SUPABASE_URL` on `localhost`/`127.0.0.1`); otherwise every AI call fails as not configured. CI runs the smoke job in fake mode.
+- **Production:** a **human step** — `npx wrangler secret put ANTHROPIC_API_KEY`. Leave `AI_MODE` unset (it defaults to `live`).
+- **Tests:** `npm test` runs the unit tests on a fake provider. One real call against the API is opt-in: `AI_LIVE_TEST=1 ANTHROPIC_API_KEY=… npx vitest run src/lib/ai/live.integration.test.ts` (bash); in PowerShell `$env:AI_LIVE_TEST="1"; $env:ANTHROPIC_API_KEY="…"; npx.cmd vitest run src/lib/ai/live.integration.test.ts` (`npx.cmd` avoids the script execution policy).
 
 ## Deployment
 

@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(12);
 
 -- Two accounts (email sign-up is disabled, so users are inserted directly).
 insert into auth.users (id, email)
@@ -46,11 +46,17 @@ select is(
 );
 select is((select count(*) from public.isolation_probe), 1::bigint, 'account A sees its own row');
 select lives_ok($$ select public.isolation_probe_fn() $$, 'authenticated can execute public functions');
+select is(
+  (select count(*) from public.begin_ai_call('grading', 'isolation', 'test-model')),
+  1::bigint,
+  'account A records an AI call'
+);
 
 -- Account B cannot see, change, remove or forge A's rows.
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
 
 select is((select count(*) from public.isolation_probe), 0::bigint, 'account B sees none of A''s rows');
+select is((select count(*) from public.ai_calls), 0::bigint, 'account B sees none of A''s AI calls');
 select lives_ok(
   $$ update public.isolation_probe set note = 'b-was-here' $$,
   'account B update runs without error'
