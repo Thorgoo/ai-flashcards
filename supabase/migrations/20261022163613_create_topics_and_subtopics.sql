@@ -139,8 +139,8 @@ begin
   delete from public.subtopics s where s.topic_id = p_topic_id;
 
   insert into public.subtopics (topic_id, name, content_type, position)
-  select p_topic_id, item.name, item.content_type, (item.ord - 1)::integer
-  from jsonb_to_recordset(p_subtopics) with ordinality as item(name text, content_type text, ord bigint);
+  select p_topic_id, item.value ->> 'name', item.value ->> 'content_type', (item.ord - 1)::integer
+  from jsonb_array_elements(p_subtopics) with ordinality as item(value, ord);
 
   return query
     select * from public.subtopics s where s.topic_id = p_topic_id order by s.position;
