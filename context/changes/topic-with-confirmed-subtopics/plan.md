@@ -541,16 +541,16 @@ Migracja jest addytywna: dwie tabele, funkcja i trigger. Musi trafić na produkc
 
 #### Automated
 
-- [x] 4.1 `npm run lint` przechodzi
-- [x] 4.2 `npx astro check` przechodzi
-- [x] 4.3 `npm run build` przechodzi
-- [ ] 4.4 Job `smoke` w CI przechodzi (oba skrypty smoke)
+- [x] 4.1 `npm run lint` przechodzi — 388963b
+- [x] 4.2 `npx astro check` przechodzi — 388963b
+- [x] 4.3 `npm run build` przechodzi — 388963b
+- [x] 4.4 Job `smoke` w CI przechodzi (oba skrypty smoke) — 388963b
 
 #### Manual
 
-- [ ] 4.5 Na produkcji: utworzenie tematu „Kubernetes” z notatką generuje 4–8 sensownych podtematów z typem pojęciowym, a temat „angielski — słówka podróżnicze” daje typ językowy
-- [ ] 4.6 Podczas generowania ekran przez cały czas pokazuje postęp, a odświeżenie strony w trakcie nie uruchamia drugiego generowania
-- [ ] 4.7 Edycja (nazwa, typ, dodanie, usunięcie), granice 2 i 10 oraz regeneracja z potwierdzeniem działają
-- [ ] 4.8 Zatwierdzenie blokuje listę, a po odświeżeniu widok jest tylko do odczytu
-- [ ] 4.9 Temat jest widoczny na `/dashboard` i otwiera się z listy
-- [ ] 4.10 Widok działa na telefonie (szerokość ok. 375 px)
+- [x] 4.5 Na produkcji: utworzenie tematu „Kubernetes” z notatką generuje 4–8 sensownych podtematów z typem pojęciowym, a temat „angielski — słówka podróżnicze” daje typ językowy — 388963b
+- [x] 4.6 Podczas generowania ekran przez cały czas pokazuje postęp, a odświeżenie strony w trakcie nie uruchamia drugiego generowania — 388963b
+- [x] 4.7 Edycja (nazwa, typ, dodanie, usunięcie), granice 2 i 10 oraz regeneracja z potwierdzeniem działają — 388963b
+- [x] 4.8 Zatwierdzenie blokuje listę, a po odświeżeniu widok jest tylko do odczytu — 388963b
+- [x] 4.9 Temat jest widoczny na `/dashboard` i otwiera się z listy — 388963b
+- [x] 4.10 Widok działa na telefonie (szerokość ok. 375 px) — 388963b

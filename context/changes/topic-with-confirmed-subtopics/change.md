@@ -1,7 +1,7 @@
 ---
 change_id: topic-with-confirmed-subtopics
 title: Topic with confirmed subtopics
-status: implementing
+status: implemented
 created: 2026-10-22
 updated: 2026-10-22
 archived_at: null
