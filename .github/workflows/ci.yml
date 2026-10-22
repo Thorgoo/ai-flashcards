@@ -44,6 +44,9 @@ jobs:
       - run: npm ci
       - name: Start local Supabase
         run: |
+          # CI stack only: `[auth.email] enable_signup = false` turns the whole email provider off,
+          # and smoke:topics signs test accounts in with a password. Production auth is configured separately.
+          sed -i '/^\[auth.email\]/,/^\[/ s/^enable_signup = false/enable_signup = true/' supabase/config.toml
           supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,realtime,storage-api,postgres-meta,supavisor
           supabase status -o env | grep -E '^(API_URL|ANON_KEY)=' > supabase.env
           # Only for smoke:topics (creates test accounts); never written to the app's .env
