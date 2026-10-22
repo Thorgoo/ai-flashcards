@@ -505,26 +505,26 @@ Migracja jest addytywna: dwie tabele, funkcja i trigger. Musi trafić na produkc
 
 #### Automated
 
-- [ ] 1.1 Migracja i testy pgTAP przechodzą w CI (job `smoke` → `Database tests`)
-- [ ] 1.2 `rls_guard` przechodzi bez nowych wpisów w `rls_guard_exceptions`
-- [x] 1.3 `npm run lint` przechodzi
+- [x] 1.1 Migracja i testy pgTAP przechodzą w CI (job `smoke` → `Database tests`) — d07bd21
+- [x] 1.2 `rls_guard` przechodzi bez nowych wpisów w `rls_guard_exceptions` — d07bd21
+- [x] 1.3 `npm run lint` przechodzi — d07bd21
 
 #### Manual
 
-- [x] 1.4 Przegląd migracji: każda nowa funkcja ma `set search_path = ''`, żadna nie daje uprawnień `anon` ani `public`
+- [x] 1.4 Przegląd migracji: każda nowa funkcja ma `set search_path = ''`, żadna nie daje uprawnień `anon` ani `public` — d07bd21
 
 ### Phase 2: Zadanie AI i API
 
 #### Automated
 
-- [ ] 2.1 `npm test` przechodzi (nowe testy `src/lib/topics/*.test.ts`)
-- [ ] 2.2 `npm run lint` przechodzi
-- [ ] 2.3 `npx astro check` przechodzi
-- [ ] 2.4 `npm run build` przechodzi
+- [x] 2.1 `npm test` przechodzi (nowe testy `src/lib/topics/*.test.ts`)
+- [x] 2.2 `npm run lint` przechodzi
+- [x] 2.3 `npx astro check` przechodzi
+- [x] 2.4 `npm run build` przechodzi
 
 #### Manual
 
-- [ ] 2.5 Przegląd promptu `subtopics`: polskie nazwy, reguła typu treści zgodna z FR-005, nazwa i notatka traktowane jako dane
+- [x] 2.5 Przegląd promptu `subtopics`: polskie nazwy, reguła typu treści zgodna z FR-005, nazwa i notatka traktowane jako dane
 
 ### Phase 3: Smoke E2E z sesją testową
 
