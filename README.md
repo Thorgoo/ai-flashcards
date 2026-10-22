@@ -56,6 +56,7 @@ npm run dev
 - `npm run lint:fix` - Auto-fix ESLint issues
 - `npm run format` - Run Prettier
 - `npm run smoke` - Smoke test the auth flow against a running server (`BASE_URL`, defaults to `http://localhost:4321`)
+- `npm run smoke:topics` - Smoke test the topic flow as signed-in test accounts (CI only, see [Smoke test](#smoke-test))
 - `npm run db:reset` - Recreate the local database from `supabase/migrations/` (requires the local Supabase stack)
 - `npm run db:test` - Run the pgTAP database tests in `supabase/tests/` (requires the local Supabase stack)
 - `npm test` - Run the Vitest unit tests (`src/**/*.test.ts`)
@@ -202,6 +203,8 @@ BASE_URL=http://localhost:4321 npm run smoke
 
 It needs a reachable Supabase instance (local or cloud) with the GitHub provider enabled.
 
+`scripts/smoke-topics.mjs` covers the topic flow as signed-in users: create, generate (`AI_MODE=fake`), edit, regenerate, confirm, the lock, a second account and the daily generation limit (21st call → 429). It creates test accounts through the Supabase admin API and signs them in with a password, so it runs only in CI against the throwaway local stack: CI enables the email provider there (`enable_signup = false` in `supabase/config.toml` turns it off entirely) and passes `SUPABASE_SERVICE_ROLE_KEY` to that step only.
+
 > **Note:** this script exists primarily to guard the development of the starter itself — it is a fast sanity check that dependency upgrades did not break the build, the Cloudflare adapter or the Supabase auth flow. It is **not** a substitute for a real test suite. Once you build your own product on top of this starter, add proper tests (unit, integration, end-to-end) suited to your application.
 
 ## CI
@@ -209,7 +212,7 @@ It needs a reachable Supabase instance (local or cloud) with the GitHub provider
 GitHub Actions runs two jobs on every push and PR to `master`:
 
 - **ci** — lint, `astro check` and build. Configure `SUPABASE_URL` and `SUPABASE_KEY` as repository secrets for the build step.
-- **smoke** — starts a local Supabase via the Supabase CLI, builds, serves the production preview on the Cloudflare runtime and runs `npm run smoke` against it. No secrets required.
+- **smoke** — starts a local Supabase via the Supabase CLI, builds, serves the production preview on the Cloudflare runtime and runs `npm run smoke` and `npm run smoke:topics` against it. No secrets required.
 
 ## License
 

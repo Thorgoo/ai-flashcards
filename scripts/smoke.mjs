@@ -37,6 +37,7 @@ async function request(path, { method = "GET", form } = {}) {
 const steps = [
   ["home renders", () => request("/"), { status: 200 }],
   ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
+  ["topic pages redirect anonymous user", () => request("/topics/new"), { status: 302, location: "/auth/signin" }],
   ["signin page renders", () => request("/auth/signin"), { status: 200 }],
   ["public signup page is gone", () => request("/auth/signup"), { status: 404 }],
   ["public signup endpoint is gone", () => request("/api/auth/signup", { method: "POST" }), { status: 404 }],

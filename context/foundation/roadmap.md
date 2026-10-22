@@ -3,7 +3,7 @@ project: AI Flashcards
 version: 1
 status: draft
 created: 2026-10-05
-updated: 2026-10-18
+updated: 2026-10-22
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -42,9 +42,9 @@ Osoba ucząca się zawodowo kilku tematów naraz zdobywa wiedzę ad-hoc (np. w r
 | ID   | Change ID                       | Outcome (user can …)                                                                                                                      | Prerequisites | PRD refs                                                              | Status      |
 | ---- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------- | --------------------------------------------------------------------- | ----------- |
 | F-01 | per-account-data-isolation      | (foundation) dane są przypisane do konta i niewidoczne dla innych kont, ze sprawdzonym testem izolacji                                    | —             | Access Control, NFR (dane widoczne tylko dla właściciela), Guardrails | done        |
-| F-02 | ai-call-guardrails              | (foundation) jedna ścieżka wywołań AI z walidacją wyniku, limitami dziennymi i podstawianymi odpowiedziami do testów                      | F-01          | FR-028, NFR (limity 20/100 dziennie), NFR (brak wrażenia zawieszenia) | in-progress |
+| F-02 | ai-call-guardrails              | (foundation) jedna ścieżka wywołań AI z walidacją wyniku, limitami dziennymi i podstawianymi odpowiedziami do testów                      | F-01          | FR-028, NFR (limity 20/100 dziennie), NFR (brak wrażenia zawieszenia) | done        |
 | S-01 | allowlisted-oauth-login         | user can zalogować się przez OAuth (tylko adresy z allowlisty) i wylogować; publiczna rejestracja znika                                   | —             | FR-001, FR-002                                                        | done        |
-| S-02 | topic-with-confirmed-subtopics  | user can utworzyć temat, poprawić wygenerowaną przez AI listę podtematów z typem treści i ją zatwierdzić                                  | S-01, F-02    | US-01, FR-003, FR-004, FR-005, FR-006, FR-028                         | proposed    |
+| S-02 | topic-with-confirmed-subtopics  | user can utworzyć temat, poprawić wygenerowaną przez AI listę podtematów z typem treści i ją zatwierdzić                                  | S-01, F-02    | US-01, FR-003, FR-004, FR-005, FR-006, FR-028                         | in-progress |
 | S-03 | diagnostic-quiz-by-subtopic     | user can rozwiązać quiz diagnostyczny z opcją „nie wiem” i zobaczyć wynik per podtemat                                                    | S-02          | US-01, FR-008, FR-009, FR-010                                         | proposed    |
 | S-04 | first-weak-subtopic-batch       | user can dostać partię fiszek z najsłabszych podtematów, czytać „więcej” i usuwać złe fiszki                                              | S-03          | US-01, FR-011, FR-012, FR-013, FR-028                                 | proposed    |
 | S-05 | multiple-choice-study-session   | user can uczyć się zaległych fiszek w formacie A/B/C/D z natychmiastowym sprawdzeniem i harmonogramem powrotów                            | S-04          | US-01, FR-014, FR-015                                                 | proposed    |
@@ -107,7 +107,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Który dostawca i model AI (`tech-stack.md` go nie wskazuje) i czy odpowiedź mieści się w ograniczeniach środowiska uruchomieniowego (`infrastructure.md`: limit CPU, przerwanie żądania przy rozłączeniu klienta)? — Owner: user. Block: no.
 - **Risk:** Musi poprzedzać pierwsze wywołanie AI, bo zapis „wszystko albo nic” i limity są trudne do dołożenia do kilku istniejących wywołań; znane ryzyko z `infrastructure.md` — zablokowany telefon przerywa generowanie, a próba i tak zużywa limit.
-- **Status:** in-progress
+- **Status:** done
 
 ## Slices
 
@@ -135,7 +135,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Pierwszy wycinek z AI i pierwszymi tabelami domenowymi — ćwiczy oba fundamenty na realnej funkcji; błędy podtematów dziedziczy cała reszta, dlatego edycja przed zablokowaniem jest częścią wycinka, a nie dodatkiem.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-03: Quiz diagnostyczny z wynikiem per podtemat
 
@@ -282,3 +282,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 - **S-01: Logowanie przez OAuth z allowlistą** — done 2026-10-11 (issue #5, PR #16). GitHub OAuth + `ALLOWED_EMAILS`; rejestracja i logowanie hasłem usunięte.
 - **F-01: (foundation) istnieje powtarzalny sposób wprowadzania zmian schematu i wzorzec „wiersz należy do konta, inne konta go nie widzą”, potwierdzony automatycznym sprawdzeniem dwóch kont; żadne tabele domenowe poza minimalnym przykładem nie są jeszcze tworzone.** — Archived 2026-10-18 → `context/archive/2026-10-17-per-account-data-isolation/`. Lesson: —.
+- **F-02: (foundation) jest jedna ścieżka wywołania AI, która waliduje kształt odpowiedzi, odrzuca niepoprawny wynik z czytelnym błędem i możliwością ponowienia, liczy osobne dzienne limity per konto (20 generowań / 100 ocen) i w testach może zostać zastąpiona podstawionymi odpowiedziami; konkretne prompty powstają w wycinkach.** — Archived 2026-10-21 → `context/archive/2026-10-18-ai-call-guardrails/`. Lesson: —.

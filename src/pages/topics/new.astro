@@ -1,0 +1,18 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import NewTopicForm from "@/components/topics/NewTopicForm";
+---
+
+<Layout title="Nowy temat">
+  <div class="dark bg-background text-foreground min-h-screen">
+    <main class="mx-auto max-w-2xl p-4">
+      <Topbar />
+      <h1 class="mb-1 text-2xl font-semibold">Nowy temat</h1>
+      <p class="text-muted-foreground mb-6 text-sm">
+        Podaj, czego chcesz się nauczyć. AI zaproponuje podtematy, które potem poprawisz i zatwierdzisz.
+      </p>
+      <NewTopicForm client:load />
+    </main>
+  </div>
+</Layout>

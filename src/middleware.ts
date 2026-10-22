@@ -2,7 +2,8 @@ import { defineMiddleware } from "astro:middleware";
 import { createClient } from "@/lib/supabase";
 import { isEmailAllowed } from "@/lib/allowlist";
 
-const PROTECTED_ROUTES = ["/dashboard"];
+// Pages only; API routes answer 401 themselves (src/lib/topics/http.ts).
+const PROTECTED_ROUTES = ["/dashboard", "/topics"];
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const supabase = createClient(context.request.headers, context.cookies);
