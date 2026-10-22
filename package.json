@@ -11,6 +11,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "smoke": "node scripts/smoke.mjs",
+    "smoke:topics": "node scripts/smoke-topics.mjs",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
     "test": "vitest run"

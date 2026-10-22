@@ -517,21 +517,21 @@ Migracja jest addytywna: dwie tabele, funkcja i trigger. Musi trafić na produkc
 
 #### Automated
 
-- [x] 2.1 `npm test` przechodzi (nowe testy `src/lib/topics/*.test.ts`)
-- [x] 2.2 `npm run lint` przechodzi
-- [x] 2.3 `npx astro check` przechodzi
-- [x] 2.4 `npm run build` przechodzi
+- [x] 2.1 `npm test` przechodzi (nowe testy `src/lib/topics/*.test.ts`) — 967eb4b
+- [x] 2.2 `npm run lint` przechodzi — 967eb4b
+- [x] 2.3 `npx astro check` przechodzi — 967eb4b
+- [x] 2.4 `npm run build` przechodzi — 967eb4b
 
 #### Manual
 
-- [x] 2.5 Przegląd promptu `subtopics`: polskie nazwy, reguła typu treści zgodna z FR-005, nazwa i notatka traktowane jako dane
+- [x] 2.5 Przegląd promptu `subtopics`: polskie nazwy, reguła typu treści zgodna z FR-005, nazwa i notatka traktowane jako dane — 967eb4b
 
 ### Phase 3: Smoke E2E z sesją testową
 
 #### Automated
 
 - [ ] 3.1 Job `smoke` przechodzi w CI, w tym nowy krok `smoke:topics` ze wszystkimi krokami PASS
-- [ ] 3.2 `npm run lint` przechodzi
+- [x] 3.2 `npm run lint` przechodzi
 
 #### Manual
 
