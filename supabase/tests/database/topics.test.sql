@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(21);
+select plan(24);
 
 insert into auth.users (id, email)
 values
@@ -131,8 +131,8 @@ select throws_ok(
 select throws_ok(
   $$ insert into public.subtopics (topic_id, name, content_type, position)
      values ('00000000-0000-0000-0000-0000000000a1', 'Nowy', 'conceptual', 2) $$,
-  '42501',
-  null,
+  'P0409',
+  'topic_not_editable',
   'a subtopic cannot be added to a confirmed topic'
 );
 update public.subtopics set name = 'Zmieniony' where topic_id = '00000000-0000-0000-0000-0000000000a1';
@@ -179,6 +179,26 @@ select ok(
 select ok(
   has_function_privilege('authenticated', 'public.replace_subtopics(uuid, jsonb)', 'execute'),
   'authenticated can execute replace_subtopics'
+);
+
+-- The lock holds without RLS too (migration lock_subtopic_writes_on_topic), and deleting a
+-- confirmed topic still cascades to its subtopics.
+select throws_ok(
+  $$ insert into public.subtopics (user_id, topic_id, name, content_type, position)
+     values ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000a1', 'Obejście', 'conceptual', 2) $$,
+  'P0409',
+  'topic_not_editable',
+  'a confirmed topic rejects new subtopics even without RLS'
+);
+select throws_ok(
+  $$ delete from public.subtopics where topic_id = '00000000-0000-0000-0000-0000000000a1' $$,
+  'P0409',
+  'topic_not_editable',
+  'a confirmed topic keeps its subtopics even without RLS'
+);
+select lives_ok(
+  $$ delete from public.topics where id = '00000000-0000-0000-0000-0000000000a1' $$,
+  'deleting a confirmed topic cascades to its subtopics'
 );
 
 select * from finish();

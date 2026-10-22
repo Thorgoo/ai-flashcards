@@ -12,6 +12,13 @@ export const SUBTOPICS_MAX = 10;
 export const AI_SUBTOPICS_MIN = 4;
 export const AI_SUBTOPICS_MAX = 8;
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Route ids are checked before querying, so a malformed id is a 404, not a database error.
+export function isUuid(value: string | undefined): value is string {
+  return value !== undefined && UUID.test(value);
+}
+
 export const CONTENT_TYPES = ["conceptual", "vocabulary"] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 

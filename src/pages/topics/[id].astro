@@ -4,13 +4,12 @@ import Topbar from "@/components/Topbar.astro";
 import TopicEditor from "@/components/topics/TopicEditor";
 import { createClient } from "@/lib/supabase";
 import { getTopic } from "@/lib/topics/repository";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuid } from "@/lib/topics/schemas";
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 const id = Astro.params.id ?? "";
 // Missing and other accounts' topics look the same: not found.
-const found = supabase && UUID.test(id) ? await getTopic(supabase, id) : null;
+const found = supabase && isUuid(id) ? await getTopic(supabase, id) : null;
 if (!found) {
   Astro.response.status = 404;
 }

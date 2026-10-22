@@ -115,7 +115,7 @@ export default function TopicEditor({ initial, autoGenerate }: Props) {
                 subtopic={subtopic}
                 disabled={busy !== null}
                 canDelete={subtopics.length > SUBTOPICS_MIN}
-                onRename={(name) => void run("save", `${base}/subtopics/${subtopic.id}`, "PATCH", { name })}
+                onRename={(name) => run("save", `${base}/subtopics/${subtopic.id}`, "PATCH", { name })}
                 onType={(contentType) => void run("save", `${base}/subtopics/${subtopic.id}`, "PATCH", { contentType })}
                 onDelete={() => void run("save", `${base}/subtopics/${subtopic.id}`, "DELETE")}
               />
@@ -192,7 +192,7 @@ function SubtopicRow(props: {
   subtopic: Subtopic;
   disabled: boolean;
   canDelete: boolean;
-  onRename: (name: string) => void;
+  onRename: (name: string) => Promise<boolean>;
   onType: (contentType: ContentType) => void;
   onDelete: () => void;
 }) {
@@ -205,7 +205,10 @@ function SubtopicRow(props: {
       setName(subtopic.name);
       return;
     }
-    props.onRename(trimmed);
+    // A refused name (e.g. a duplicate) goes back to the saved one, so a later blur does not resend it.
+    void props.onRename(trimmed).then((saved) => {
+      if (!saved) setName(subtopic.name);
+    });
   }
 
   return (
