@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(21);
 
 -- Two accounts (email sign-up is disabled, so users are inserted directly).
 insert into auth.users (id, email)
@@ -38,6 +38,9 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
 
 insert into public.isolation_probe (note) values ('a-original');
+insert into public.topics (id, name) values ('00000000-0000-0000-0000-0000000000a1', 'a-topic');
+insert into public.subtopics (topic_id, name, content_type, position)
+values ('00000000-0000-0000-0000-0000000000a1', 'a-subtopic', 'conceptual', 0);
 
 select is(
   (select user_id from public.isolation_probe),
@@ -57,6 +60,25 @@ set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000b", 
 
 select is((select count(*) from public.isolation_probe), 0::bigint, 'account B sees none of A''s rows');
 select is((select count(*) from public.ai_calls), 0::bigint, 'account B sees none of A''s AI calls');
+select is((select count(*) from public.topics), 0::bigint, 'account B sees none of A''s topics');
+select is((select count(*) from public.subtopics), 0::bigint, 'account B sees none of A''s subtopics');
+select lives_ok($$ update public.topics set name = 'b-was-here' $$, 'account B topic update runs without error');
+select lives_ok($$ delete from public.topics $$, 'account B topic delete runs without error');
+select lives_ok($$ update public.subtopics set name = 'b-was-here' $$, 'account B subtopic update runs without error');
+select lives_ok($$ delete from public.subtopics $$, 'account B subtopic delete runs without error');
+select throws_ok(
+  $$ insert into public.topics (user_id, name) values ('00000000-0000-0000-0000-00000000000a', 'forged') $$,
+  '42501',
+  null,
+  'account B cannot insert a topic owned by A'
+);
+select throws_ok(
+  $$ insert into public.subtopics (topic_id, name, content_type, position)
+     values ('00000000-0000-0000-0000-0000000000a1', 'forged', 'conceptual', 1) $$,
+  '42501',
+  null,
+  'account B cannot add a subtopic to A''s topic'
+);
 select lives_ok(
   $$ update public.isolation_probe set note = 'b-was-here' $$,
   'account B update runs without error'
@@ -79,6 +101,11 @@ select results_eq(
   $$ select note from public.isolation_probe $$,
   $$ values ('a-original') $$,
   'account A row is unchanged after account B update and delete'
+);
+select results_eq(
+  $$ select t.name || '/' || s.name from public.topics t join public.subtopics s on s.topic_id = t.id $$,
+  $$ values ('a-topic/a-subtopic') $$,
+  'account A topic and subtopic are unchanged after account B update and delete'
 );
 
 -- Anonymous callers have no privileges on app tables at all (migration revoke_anon_default_privileges).
