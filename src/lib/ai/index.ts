@@ -21,6 +21,11 @@ export function getAi(supabase: SupabaseClient, user: User | null): Ai {
     logAiError(`AI_MODE=${AI_MODE} needs a local Supabase (localhost or 127.0.0.1)`);
     return { mode: "live", call: () => Promise.resolve(aiError("ai_not_configured")) };
   }
+  // A missing key would fail every call after the daily limit is charged, with no log.
+  if (mode === "live" && !ANTHROPIC_API_KEY) {
+    logAiError("ANTHROPIC_API_KEY is not set");
+    return { mode, call: () => Promise.resolve(aiError("ai_not_configured")) };
+  }
 
   const provider: AiProvider =
     mode === "fake" ? createFakeProvider(fakeFixtures) : createLiveProvider({ apiKey: ANTHROPIC_API_KEY });

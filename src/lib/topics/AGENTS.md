@@ -2,7 +2,7 @@
 
 ## The lock lives in the database
 
-- A topic is a `draft` until confirmed; confirming is permanent and needs 2–10 subtopics. The `create_topics_and_subtopics` migration enforces this (RLS on `subtopics` passes writes only for draft topics, a trigger guards `topics.status`), so never rely on the API check alone and never relax those policies to make a feature work. Later slices (quiz, flashcards) read confirmed topics and may assume the list never changes.
+- A topic is a `draft` until confirmed; confirming is permanent and needs 2–10 subtopics. The `create_topics_and_subtopics` migration enforces this (RLS and a locking trigger on `subtopics` pass writes only for draft topics, a trigger guards `topics.status`), so never rely on the API check alone and never relax those policies to make a feature work. Later slices (quiz, flashcards) read confirmed topics and may assume the list never changes.
 - Replace a whole list only through `replaceSubtopics` (`replace_subtopics` RPC): it is atomic, so a failed generation never leaves a partial list (FR-028).
 
 ## Endpoints

@@ -207,7 +207,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Prerequisites:** S-05
 - **Parallel with:** S-06, S-07, S-09, S-10
 - **Blockers:** —
-- **Unknowns:** —
+- **Unknowns:** Reguły zapisu tematu po zatwierdzeniu na poziomie bazy (z przeglądu S-02, F4): dziś PostgREST pozwala zmienić `scope_note` i usunąć zatwierdzony temat — rozstrzygnąć razem z FR-007 (zmiana nazwy, archiwizacja zamiast usuwania) i rozszerzyć trigger `guard_topic_status`.
 - **Risk:** Wymaga danych o zaległości i sesjach z S-05; archiwizacja wyklucza temat z serii dni i odznak — jeśli S-09/S-10 powstaną przed tym wycinkiem, to on musi dołożyć wykluczenie, w przeciwnym razie robią to one.
 - **Status:** proposed
 

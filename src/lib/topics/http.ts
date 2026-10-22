@@ -4,8 +4,7 @@ import type { z } from "zod";
 import { createClient } from "@/lib/supabase";
 import { topicErrorResponse } from "./errors";
 import { getTopic, type TopicWithSubtopics } from "./repository";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuid } from "./schemas";
 
 export interface Session {
   supabase: SupabaseClient;
@@ -41,16 +40,28 @@ export async function loadTopic(
   supabase: SupabaseClient,
   id: string | undefined,
 ): Promise<TopicWithSubtopics | Response> {
-  if (!id || !UUID.test(id)) {
+  if (!isUuid(id)) {
     return topicErrorResponse("not_found");
   }
-  const found = await getTopic(supabase, id);
+  const found = await readTopic(supabase, id);
   return found ?? topicErrorResponse("not_found");
 }
 
 // Every mutation answers with the topic's full current state, so the client never
 // assembles state on its own.
 export async function topicState(supabase: SupabaseClient, id: string): Promise<Response> {
-  const found = await getTopic(supabase, id);
+  const found = await readTopic(supabase, id);
+  if (found instanceof Response) return found;
   return found ? Response.json({ data: found }) : topicErrorResponse("not_found");
+}
+
+// A failed read still answers in the shared error shape, never with the runtime's bare 500.
+async function readTopic(supabase: SupabaseClient, id: string): Promise<TopicWithSubtopics | null | Response> {
+  try {
+    return await getTopic(supabase, id);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[topics] reading topic failed", error);
+    return topicErrorResponse("save_failed");
+  }
 }
