@@ -193,7 +193,14 @@ try {
   );
 
   r = await api("/dashboard", { method: "GET", cookie: a.cookie });
-  check("dashboard renders for the signed-in account", r.status === 200, describe(r));
+  check(
+    "dashboard lists the account's topics",
+    r.status === 200 && r.text.includes("Kubernetes") && r.text.includes("Docker"),
+    `status ${r.status}`,
+  );
+
+  r = await api(`/topics/${topicId}`, { method: "GET", cookie: b.cookie });
+  check("another account gets 404 on the topic page", r.status === 404, `status ${r.status}`);
 } catch (error) {
   failed++;
   console.log(`FAIL  ${error instanceof Error ? error.message : String(error)}`);

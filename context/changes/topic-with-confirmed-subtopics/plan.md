@@ -530,20 +530,20 @@ Migracja jest addytywna: dwie tabele, funkcja i trigger. Musi trafić na produkc
 
 #### Automated
 
-- [ ] 3.1 Job `smoke` przechodzi w CI, w tym nowy krok `smoke:topics` ze wszystkimi krokami PASS
-- [x] 3.2 `npm run lint` przechodzi
+- [x] 3.1 Job `smoke` przechodzi w CI, w tym nowy krok `smoke:topics` ze wszystkimi krokami PASS — 80c10b5
+- [x] 3.2 `npm run lint` przechodzi — 80c10b5
 
 #### Manual
 
-- [ ] 3.3 Log CI kroku `smoke:topics` pokazuje 429 przy 21. generowaniu (kontrakt `quota.ts` na PostgREST potwierdzony) i nie zawiera klucza serwisowego
+- [x] 3.3 Log CI kroku `smoke:topics` pokazuje 429 przy 21. generowaniu (kontrakt `quota.ts` na PostgREST potwierdzony) i nie zawiera klucza serwisowego — 80c10b5
 
 ### Phase 4: UI
 
 #### Automated
 
-- [ ] 4.1 `npm run lint` przechodzi
-- [ ] 4.2 `npx astro check` przechodzi
-- [ ] 4.3 `npm run build` przechodzi
+- [x] 4.1 `npm run lint` przechodzi
+- [x] 4.2 `npx astro check` przechodzi
+- [x] 4.3 `npm run build` przechodzi
 - [ ] 4.4 Job `smoke` w CI przechodzi (oba skrypty smoke)
 
 #### Manual

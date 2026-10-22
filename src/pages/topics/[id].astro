@@ -1,0 +1,40 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import TopicEditor from "@/components/topics/TopicEditor";
+import { createClient } from "@/lib/supabase";
+import { getTopic } from "@/lib/topics/repository";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+const id = Astro.params.id ?? "";
+// Missing and other accounts' topics look the same: not found.
+const found = supabase && UUID.test(id) ? await getTopic(supabase, id) : null;
+if (!found) {
+  Astro.response.status = 404;
+}
+const autoGenerate =
+  found !== null &&
+  found.topic.status === "draft" &&
+  found.subtopics.length === 0 &&
+  Astro.url.searchParams.get("generate") === "1";
+---
+
+<Layout title={found ? found.topic.name : "Nie znaleziono tematu"}>
+  <div class="dark bg-background text-foreground min-h-screen">
+    <main class="mx-auto max-w-2xl p-4">
+      <Topbar />
+      {found ? (
+        <TopicEditor client:load initial={found} autoGenerate={autoGenerate} />
+      ) : (
+        <div class="space-y-4">
+          <h1 class="text-2xl font-semibold">Nie znaleziono tematu</h1>
+          <a href="/dashboard" class="text-primary underline underline-offset-4">
+            Wróć do listy tematów
+          </a>
+        </div>
+      )}
+    </main>
+  </div>
+</Layout>
