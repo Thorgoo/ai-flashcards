@@ -1,10 +1,10 @@
 ---
 change_id: topic-with-confirmed-subtopics
 title: Topic with confirmed subtopics
-status: impl_reviewed
+status: archived
 created: 2026-10-22
 updated: 2026-10-22
-archived_at: null
+archived_at: 2026-10-22T19:19:51Z
 ---
 
 ## Notes
