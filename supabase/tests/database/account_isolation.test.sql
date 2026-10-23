@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(21);
+select plan(27);
 
 -- Two accounts (email sign-up is disabled, so users are inserted directly).
 insert into auth.users (id, email)
@@ -41,6 +41,20 @@ insert into public.isolation_probe (note) values ('a-original');
 insert into public.topics (id, name) values ('00000000-0000-0000-0000-0000000000a1', 'a-topic');
 insert into public.subtopics (topic_id, name, content_type, position)
 values ('00000000-0000-0000-0000-0000000000a1', 'a-subtopic', 'conceptual', 0);
+-- A confirmed topic with a quiz (writes go through create_quiz only).
+insert into public.topics (id, name) values ('00000000-0000-0000-0000-0000000000a2', 'a-quiz-topic');
+insert into public.subtopics (id, topic_id, name, content_type, position)
+values
+  ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000a2', 'a-s1', 'conceptual', 0),
+  ('00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-0000000000a2', 'a-s2', 'conceptual', 1);
+update public.topics set status = 'confirmed' where id = '00000000-0000-0000-0000-0000000000a2';
+select public.create_quiz(
+  '00000000-0000-0000-0000-0000000000a2',
+  (select jsonb_agg(jsonb_build_object(
+     'subtopic_id', case when i % 2 = 0 then '00000000-0000-0000-0000-0000000000c1' else '00000000-0000-0000-0000-0000000000c2' end,
+     'prompt', 'q' || i, 'options', jsonb_build_array('a', 'b', 'c', 'd'), 'correct_index', 0))
+   from generate_series(0, 9) as i)
+);
 
 select is(
   (select user_id from public.isolation_probe),
@@ -79,6 +93,22 @@ select throws_ok(
   null,
   'account B cannot add a subtopic to A''s topic'
 );
+select is((select count(*) from public.quizzes), 0::bigint, 'account B sees none of A''s quizzes');
+select is((select count(*) from public.quiz_questions), 0::bigint, 'account B sees none of A''s quiz questions');
+select throws_ok(
+  $$ update public.quiz_questions set answer = 0 $$,
+  '42501',
+  null,
+  'account B cannot write quiz answers directly'
+);
+select throws_ok($$ delete from public.quizzes $$, '42501', null, 'account B cannot delete quizzes directly');
+select throws_ok(
+  $$ insert into public.quizzes (user_id, topic_id)
+     values ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000a2') $$,
+  '42501',
+  null,
+  'account B cannot insert a quiz owned by A'
+);
 select lives_ok(
   $$ update public.isolation_probe set note = 'b-was-here' $$,
   'account B update runs without error'
@@ -106,6 +136,11 @@ select results_eq(
   $$ select t.name || '/' || s.name from public.topics t join public.subtopics s on s.topic_id = t.id $$,
   $$ values ('a-topic/a-subtopic') $$,
   'account A topic and subtopic are unchanged after account B update and delete'
+);
+select is(
+  (select count(*) from public.quiz_questions q join public.quizzes z on z.id = q.quiz_id where q.answer is null),
+  10::bigint,
+  'account A quiz is unchanged after account B'
 );
 
 -- Anonymous callers have no privileges on app tables at all (migration revoke_anon_default_privileges).
