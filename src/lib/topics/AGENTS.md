@@ -1,17 +1,19 @@
-# src/lib/topics/ — topics and subtopics guide
+# src/lib/topics/ — topics, subtopics and quiz guide
 
-## The lock lives in the database
+## Invariants live in the database
 
-- A topic is a `draft` until confirmed; confirming is permanent and needs 2–10 subtopics. The `create_topics_and_subtopics` migration enforces this (RLS and a locking trigger on `subtopics` pass writes only for draft topics, a trigger guards `topics.status`), so never rely on the API check alone and never relax those policies to make a feature work. Later slices (quiz, flashcards) read confirmed topics and may assume the list never changes.
-- Replace a whole list only through `replaceSubtopics` (`replace_subtopics` RPC): it is atomic, so a failed generation never leaves a partial list (FR-028).
+- A topic is a `draft` until confirmed; confirming is permanent and needs 2–10 subtopics. RLS and triggers on `topics`/`subtopics` enforce it, so never rely on the API check alone or relax those policies. Later slices may assume a confirmed list never changes.
+- Replace a whole list only through `replaceSubtopics` (atomic, FR-028).
+- One quiz per confirmed topic. `authenticated` only reads `quizzes`/`quiz_questions`; writes go through `create_quiz` and `answer_quiz_question` (answers are final). A question's subtopic belongs to its topic by composite foreign key.
+- Per-subtopic results come only from `quiz_results` (computed from answers); S-04 reads the same.
 
 ## Endpoints
 
-- Check `topic.status` before calling AI: every call uses up the daily limit, even when saving fails afterwards. See `@../../pages/api/topics/[id]/generate.ts`.
-- Errors use `topicErrorResponse` from `@errors.ts`, the same `{ error: { code, message, retryable } }` shape as `src/lib/ai/errors.ts`; add a code there instead of a new shape. Map new Postgres errors in `errorCode` in `@repository.ts`.
-- Use the helpers in `@http.ts` (session → 401 JSON, JSON body → 400, topic → 404 for missing, foreign or malformed ids). Every mutation answers with the full topic state; the editor island renders only that.
-- Limits (name lengths, 2–10 manual, 4–8 from AI) are defined once in `@schemas.ts` and must match the migration's checks.
+- Check the topic's state before calling AI: every call uses up the daily limit. See `@../../pages/api/topics/[id]/generate.ts`.
+- Errors use `topicErrorResponse` (`@errors.ts`), the shape of `src/lib/ai/errors.ts`; add a code, not a shape.
+- Use `@http.ts` (401 JSON, 400 body, 404 topic, `readQuizState`). Mutations return full state; islands render only that. `correctIndex` never leaves the API before a quiz is completed; the server shuffles options (`@quiz-task.ts`).
+- Limits (lengths, 2–10 manual, 4–8 from AI, quiz quotas) live in `@schemas.ts` / `@quiz-task.ts` and match the migrations.
 
 ## Testing
 
-Unit tests run on the fake AI provider (`*.test.ts`); import `callAi` from `@/lib/ai/call`, since `@/lib/ai` needs `astro:env`. The end-to-end flow is `scripts/smoke-topics.mjs` (CI only); extend it when an endpoint changes.
+Unit tests use the fake AI provider; import `callAi` from `@/lib/ai/call` (`@/lib/ai` needs `astro:env`). The end-to-end flow is `scripts/smoke-topics.mjs` (CI only); extend it when an endpoint changes, and keep its generation count in step with the daily-limit loop.

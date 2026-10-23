@@ -1,0 +1,52 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import QuizRunner from "@/components/topics/QuizRunner";
+import { createClient } from "@/lib/supabase";
+import { getQuizState } from "@/lib/topics/quiz-repository";
+import { getTopic } from "@/lib/topics/repository";
+import { isUuid } from "@/lib/topics/schemas";
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+const id = Astro.params.id ?? "";
+// Missing and other accounts' topics look the same: not found.
+const found = supabase && isUuid(id) ? await getTopic(supabase, id) : null;
+// A draft topic has no quiz yet: the page points back to confirming the list.
+const confirmed = found?.topic.status === "confirmed";
+if (!found) {
+  Astro.response.status = 404;
+}
+const state = supabase && found && confirmed ? await getQuizState(supabase, found.topic.id) : null;
+const autoStart = confirmed && state === null && Astro.url.searchParams.get("start") === "1";
+---
+
+<Layout title={found ? `Quiz: ${found.topic.name}` : "Nie znaleziono tematu"}>
+  <div class="dark bg-background text-foreground min-h-screen">
+    <main class="mx-auto max-w-2xl p-4">
+      <Topbar />
+      {found && !confirmed ? (
+        <div class="space-y-4">
+          <h1 class="text-2xl font-semibold">Najpierw zatwierdź listę podtematów</h1>
+          <a href={`/topics/${found.topic.id}`} class="text-primary underline underline-offset-4">
+            Wróć do tematu „{found.topic.name}”
+          </a>
+        </div>
+      ) : found ? (
+        <QuizRunner
+          client:load
+          topicId={found.topic.id}
+          topicName={found.topic.name}
+          initial={state}
+          autoStart={autoStart}
+        />
+      ) : (
+        <div class="space-y-4">
+          <h1 class="text-2xl font-semibold">Nie znaleziono tematu</h1>
+          <a href="/dashboard" class="text-primary underline underline-offset-4">
+            Wróć do listy tematów
+          </a>
+        </div>
+      )}
+    </main>
+  </div>
+</Layout>

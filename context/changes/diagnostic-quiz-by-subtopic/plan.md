@@ -463,23 +463,23 @@ Migracja jest addytywna: dwie tabele, trzy funkcje, trigger i dodatkowe `unique`
 
 #### Automated
 
-- [x] 2.1 `npm test` przechodzi (nowy `src/lib/topics/quiz-task.test.ts`)
-- [x] 2.2 `npm run lint` przechodzi
-- [x] 2.3 `npx astro check` przechodzi
-- [x] 2.4 `npm run build` przechodzi
-- [ ] 2.5 Job `smoke` w CI przechodzi, w tym nowe kroki quizu w `smoke:topics`
+- [x] 2.1 `npm test` przechodzi (nowy `src/lib/topics/quiz-task.test.ts`) — 7093eb8
+- [x] 2.2 `npm run lint` przechodzi — 7093eb8
+- [x] 2.3 `npx astro check` przechodzi — 7093eb8
+- [x] 2.4 `npm run build` przechodzi — 7093eb8
+- [x] 2.5 Job `smoke` w CI przechodzi, w tym nowe kroki quizu w `smoke:topics` — 7093eb8
 
 #### Manual
 
-- [x] 2.6 Przegląd promptu `quiz`: kwoty obowiązkowe, pytania tłumaczeniowe dla `vocabulary`, nazwa, notatka i podtematy traktowane jako dane
+- [x] 2.6 Przegląd promptu `quiz`: kwoty obowiązkowe, pytania tłumaczeniowe dla `vocabulary`, nazwa, notatka i podtematy traktowane jako dane — 7093eb8
 
 ### Phase 3: UI
 
 #### Automated
 
-- [ ] 3.1 `npm run lint` przechodzi
-- [ ] 3.2 `npx astro check` przechodzi
-- [ ] 3.3 `npm run build` przechodzi
+- [x] 3.1 `npm run lint` przechodzi
+- [x] 3.2 `npx astro check` przechodzi
+- [x] 3.3 `npm run build` przechodzi
 - [ ] 3.4 Job `smoke` w CI przechodzi
 
 #### Manual
