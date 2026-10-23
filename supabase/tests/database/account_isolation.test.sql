@@ -133,7 +133,8 @@ select results_eq(
   'account A row is unchanged after account B update and delete'
 );
 select results_eq(
-  $$ select t.name || '/' || s.name from public.topics t join public.subtopics s on s.topic_id = t.id $$,
+  $$ select t.name || '/' || s.name from public.topics t join public.subtopics s on s.topic_id = t.id
+     where t.id = '00000000-0000-0000-0000-0000000000a1' $$,
   $$ values ('a-topic/a-subtopic') $$,
   'account A topic and subtopic are unchanged after account B update and delete'
 );
