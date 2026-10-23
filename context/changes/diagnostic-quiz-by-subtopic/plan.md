@@ -451,27 +451,27 @@ Migracja jest addytywna: dwie tabele, trzy funkcje, trigger i dodatkowe `unique`
 
 #### Automated
 
-- [ ] 1.1 Migracja i testy pgTAP przechodzą w CI (job `smoke` → `Database tests`)
-- [ ] 1.2 `rls_guard` przechodzi bez nowych wpisów w `rls_guard_exceptions`
-- [x] 1.3 `npm run lint` przechodzi
+- [x] 1.1 Migracja i testy pgTAP przechodzą w CI (job `smoke` → `Database tests`) — 53c5eb1
+- [x] 1.2 `rls_guard` przechodzi bez nowych wpisów w `rls_guard_exceptions` — 53c5eb1
+- [x] 1.3 `npm run lint` przechodzi — 53c5eb1
 
 #### Manual
 
-- [x] 1.4 Przegląd migracji: każda nowa funkcja ma `set search_path = ''`, żadna nie daje uprawnień `anon` ani `public`, a zmiana `subtopics` jest wyłącznie addytywna
+- [x] 1.4 Przegląd migracji: każda nowa funkcja ma `set search_path = ''`, żadna nie daje uprawnień `anon` ani `public`, a zmiana `subtopics` jest wyłącznie addytywna — 53c5eb1
 
 ### Phase 2: Zadanie AI, API i smoke
 
 #### Automated
 
-- [ ] 2.1 `npm test` przechodzi (nowy `src/lib/topics/quiz-task.test.ts`)
-- [ ] 2.2 `npm run lint` przechodzi
-- [ ] 2.3 `npx astro check` przechodzi
-- [ ] 2.4 `npm run build` przechodzi
+- [x] 2.1 `npm test` przechodzi (nowy `src/lib/topics/quiz-task.test.ts`)
+- [x] 2.2 `npm run lint` przechodzi
+- [x] 2.3 `npx astro check` przechodzi
+- [x] 2.4 `npm run build` przechodzi
 - [ ] 2.5 Job `smoke` w CI przechodzi, w tym nowe kroki quizu w `smoke:topics`
 
 #### Manual
 
-- [ ] 2.6 Przegląd promptu `quiz`: kwoty obowiązkowe, pytania tłumaczeniowe dla `vocabulary`, nazwa, notatka i podtematy traktowane jako dane
+- [x] 2.6 Przegląd promptu `quiz`: kwoty obowiązkowe, pytania tłumaczeniowe dla `vocabulary`, nazwa, notatka i podtematy traktowane jako dane
 
 ### Phase 3: UI
 

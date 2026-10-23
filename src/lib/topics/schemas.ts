@@ -43,6 +43,12 @@ export const updateSubtopicInput = z
     message: "name or contentType is required",
   });
 
+// A quiz answer: option 0-3, or "dont_know" (stored as -1).
+export const quizAnswerInput = z.object({
+  questionId: z.string().refine(isUuid, { message: "questionId must be a uuid" }),
+  answer: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal("dont_know")]),
+});
+
 export type CreateTopicInput = z.infer<typeof createTopicInput>;
 export type AddSubtopicInput = z.infer<typeof addSubtopicInput>;
 export type UpdateSubtopicInput = z.infer<typeof updateSubtopicInput>;
