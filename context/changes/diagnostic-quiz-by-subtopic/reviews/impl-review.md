@@ -60,7 +60,7 @@ Plan drift:
   - Tradeoff: It does not protect against a lost connection or a closed browser; the real fix is deferred.
   - Confidence: HIGH — standard browser behaviour, and the AI path is shared, so a deferred fix covers S-02 too.
   - Blind spot: Mobile browsers do not always show the `beforeunload` dialog.
-- **Decision**: FIXED (Fix A) — migracja 20261024064348_quiz_generation_claim (claim_quiz/release_quiz_claim, status generating|ready, TTL 90 s), POST /quiz w cfContext.waitUntil, GET /quiz, polling w QuizRunner, pgTAP + smoke
+- **Decision**: FIXED (Fix A) — migracja 20261024064348_quiz_generation_claim (claim_quiz/release_quiz_claim, status generating|ready, TTL 90 s), POST /quiz w cfContext.waitUntil, GET /quiz, polling w QuizRunner, pgTAP + smoke; zweryfikowane na produkcji 2026-10-24: odświeżenie w trakcie generowania → postęp, quiz zapisany i widoczny po 4 s pollingu, bez drugiego generowania
 
 ### F2 — Równoległe POST /quiz zwraca 500 `save_failed` zamiast 409
 
@@ -132,4 +132,4 @@ Plan drift:
   - "Kontynuuj" was not seen, because no quiz was left half-finished when returning to the topic page.
   - The code path exists in `TopicEditor.tsx`, and the state comes from the same `getQuizState`.
 - **Fix**: Accept; check at the next quiz on a new topic.
-- **Decision**: PENDING VERIFICATION — sprawdzić „Kontynuuj quiz” na produkcji przy teście F1
+- **Decision**: ACCEPTED — zweryfikowane na produkcji 2026-10-24: po 3 odpowiedziach temat pokazuje „Kontynuuj quiz (3/10)”
