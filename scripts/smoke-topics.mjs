@@ -179,6 +179,8 @@ try {
     r.status === 409 && r.json?.error?.code === "topic_not_confirmed",
     describe(r),
   );
+  r = await api(`${draft}/quiz`, { method: "GET", cookie: a.cookie });
+  check("a topic without a quiz has no quiz state", r.status === 200 && r.json?.data === null, describe(r));
 
   r = await api(`${topic}/quiz`, { cookie: a.cookie });
   check(
@@ -193,6 +195,15 @@ try {
   );
   const firstQuestion = r.json?.data?.question?.id;
   let state = r;
+  r = await api(`${topic}/quiz`, { method: "GET", cookie: a.cookie });
+  check(
+    "the quiz state is read back for the quiz page",
+    r.status === 200 &&
+      r.json?.data?.quiz?.status === "ready" &&
+      r.json?.data?.question?.id === firstQuestion &&
+      !r.text.includes("correctIndex"),
+    describe(r),
+  );
   for (let i = 0; i < 10 && state.json?.data?.question; i++) {
     const answer = i % 3 === 0 ? "dont_know" : 0;
     state = await api(`${topic}/quiz/answer`, {

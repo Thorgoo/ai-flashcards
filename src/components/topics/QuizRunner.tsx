@@ -18,6 +18,7 @@ interface Props {
 type Busy = "generate" | "answer" | null;
 
 const LETTERS = ["A", "B", "C", "D"];
+const POLL_MS = 2000;
 
 export default function QuizRunner({ topicId, topicName, initial, autoStart }: Props) {
   const [state, setState] = useState(initial);
@@ -36,7 +37,17 @@ export default function QuizRunner({ topicId, topicName, initial, autoStart }: P
       setState(result.data);
       return;
     }
+    // Another tab (or the request before a reload) is already generating: wait for it.
+    if (result.error.code === "quiz_generating") {
+      await refresh();
+      return;
+    }
     setError({ error: result.error, retry: () => void run(kind, path, body) });
+  }
+
+  async function refresh() {
+    const result = await callApi<QuizState | null>(base, "GET");
+    if (result.ok) setState(result.data);
   }
 
   const generate = () => void run("generate", base);
@@ -53,6 +64,20 @@ export default function QuizRunner({ topicId, topicName, initial, autoStart }: P
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const generating = busy === "generate" || state?.quiz.status === "generating";
+
+  // A generation started before a reload, or in another tab, finishes on the server; poll
+  // until the quiz is ready (or its claim expires and reads as no quiz).
+  useEffect(() => {
+    if (state?.quiz.status !== "generating" || busy !== null) return;
+    const timer = window.setInterval(() => void refresh(), POLL_MS);
+    return () => {
+      window.clearInterval(timer);
+    };
+    // refresh only reads base, which is fixed for the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, busy]);
+
   const question = state?.question ?? null;
 
   return (
@@ -66,7 +91,7 @@ export default function QuizRunner({ topicId, topicName, initial, autoStart }: P
       </a>
       <h1 className="text-2xl font-semibold">Quiz diagnostyczny</h1>
 
-      {busy === "generate" ? (
+      {generating ? (
         <GeneratingNotice label="AI przygotowuje pytania…" />
       ) : (
         error && (
@@ -83,16 +108,14 @@ export default function QuizRunner({ topicId, topicName, initial, autoStart }: P
         )
       )}
 
-      {state === null ? (
-        busy !== "generate" && (
-          <div className="border-border space-y-3 rounded-lg border p-6">
-            <p>
-              Quiz ma 10 pytań z podtematów tego tematu. Jeśli nie znasz odpowiedzi, wybierz „Nie wiem” — zgadywanie
-              zafałszuje diagnozę. Wynik i poprawne odpowiedzi zobaczysz na końcu.
-            </p>
-            <Button onClick={generate}>Rozpocznij quiz</Button>
-          </div>
-        )
+      {generating ? null : state === null ? (
+        <div className="border-border space-y-3 rounded-lg border p-6">
+          <p>
+            Quiz ma 10 pytań z podtematów tego tematu. Jeśli nie znasz odpowiedzi, wybierz „Nie wiem” — zgadywanie
+            zafałszuje diagnozę. Wynik i poprawne odpowiedzi zobaczysz na końcu.
+          </p>
+          <Button onClick={generate}>Rozpocznij quiz</Button>
+        </div>
       ) : question ? (
         <section aria-busy={busy !== null} className="space-y-4">
           <div className="space-y-2">

@@ -5,6 +5,8 @@ import { asData } from "./subtopics-task";
 
 export const QUIZ_TASK = "quiz";
 export const QUIZ_SIZE = 10;
+// A generating quiz older than this is abandoned (claim_quiz, migration quiz_generation_claim).
+export const QUIZ_CLAIM_TTL_SECONDS = 90;
 const OPTION_COUNT = 4;
 
 // Even split of the 10 questions: counts differ by at most one and the extra questions go
