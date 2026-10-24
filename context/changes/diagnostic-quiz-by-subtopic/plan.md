@@ -477,16 +477,16 @@ Migracja jest addytywna: dwie tabele, trzy funkcje, trigger i dodatkowe `unique`
 
 #### Automated
 
-- [x] 3.1 `npm run lint` przechodzi
-- [x] 3.2 `npx astro check` przechodzi
-- [x] 3.3 `npm run build` przechodzi
-- [ ] 3.4 Job `smoke` w CI przechodzi
+- [x] 3.1 `npm run lint` przechodzi — e877295
+- [x] 3.2 `npx astro check` przechodzi — e877295
+- [x] 3.3 `npm run build` przechodzi — e877295
+- [x] 3.4 Job `smoke` w CI przechodzi — e877295
 
 #### Manual
 
-- [ ] 3.5 Na produkcji: quiz dla tematu „Kubernetes” ma 10 sensownych pytań rozłożonych równo na podtematy, a dla tematu językowego pytania o znaczenie lub tłumaczenie słów
-- [ ] 3.6 Podczas generowania widać postęp, a odświeżenie w trakcie nie uruchamia drugiego generowania
-- [ ] 3.7 Odświeżenie w połowie quizu wraca do pierwszego pytania bez odpowiedzi; odpowiedzi nie da się zmienić
-- [ ] 3.8 Ekran wyniku pokazuje per podtemat poprawne/zadane, % i liczbę „nie wiem” oraz przegląd pytań z poprawnymi odpowiedziami
-- [ ] 3.9 Na temacie widać „Rozpocznij / Kontynuuj quiz / Zobacz wynik” zgodnie ze stanem
-- [ ] 3.10 Widok działa na telefonie (szerokość ok. 375 px)
+- [x] 3.5 Na produkcji: quiz dla tematu „Kubernetes” ma 10 sensownych pytań rozłożonych równo na podtematy, a dla tematu językowego pytania o znaczenie lub tłumaczenie słów — e877295
+- [x] 3.6 Podczas generowania widać postęp, a odświeżenie w trakcie nie uruchamia drugiego generowania — e877295
+- [x] 3.7 Odświeżenie w połowie quizu wraca do pierwszego pytania bez odpowiedzi; odpowiedzi nie da się zmienić — e877295
+- [x] 3.8 Ekran wyniku pokazuje per podtemat poprawne/zadane, % i liczbę „nie wiem” oraz przegląd pytań z poprawnymi odpowiedziami — e877295
+- [x] 3.9 Na temacie widać „Rozpocznij / Kontynuuj quiz / Zobacz wynik” zgodnie ze stanem — e877295
+- [x] 3.10 Widok działa na telefonie (szerokość ok. 375 px) — e877295
