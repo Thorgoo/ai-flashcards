@@ -170,18 +170,66 @@ try {
     describe(r),
   );
 
-  // Two generations used so far; the refused one above must not have counted.
+  // Diagnostic quiz (S-03).
   r = await api("/api/topics", { body: { name: "Docker" }, cookie: a.cookie });
   const draft = `/api/topics/${r.json?.data?.id}`;
-  const results = [];
-  for (let i = 3; i <= GENERATION_LIMIT + 1; i++) {
-    results.push(await api(`${draft}/generate`, { cookie: a.cookie }));
-  }
-  const lastAllowed = results.at(-2);
-  const refused = results.at(-1);
+  r = await api(`${draft}/quiz`, { cookie: a.cookie });
   check(
-    `generations 3-${GENERATION_LIMIT} are allowed`,
-    results.slice(0, -1).every((res) => res.status === 200) && lastAllowed?.json?.remaining === 0,
+    "a draft topic cannot start a quiz",
+    r.status === 409 && r.json?.error?.code === "topic_not_confirmed",
+    describe(r),
+  );
+
+  r = await api(`${topic}/quiz`, { cookie: a.cookie });
+  check(
+    "start the quiz (fake AI) without revealing answers",
+    r.status === 200 &&
+      r.headers.get("X-AI-Mode") === "fake" &&
+      r.json?.data?.quiz?.total === 10 &&
+      typeof r.json?.data?.question?.id === "string" &&
+      r.json?.remaining === GENERATION_LIMIT - 3 &&
+      !r.text.includes("correctIndex"),
+    describe(r),
+  );
+  const firstQuestion = r.json?.data?.question?.id;
+  let state = r;
+  for (let i = 0; i < 10 && state.json?.data?.question; i++) {
+    const answer = i % 3 === 0 ? "dont_know" : 0;
+    state = await api(`${topic}/quiz/answer`, {
+      body: { questionId: state.json.data.question.id, answer },
+      cookie: a.cookie,
+    });
+  }
+  const results = state.json?.data?.results ?? [];
+  const review = state.json?.data?.review ?? [];
+  check(
+    "answering 10 questions completes the quiz with results and review",
+    state.status === 200 &&
+      state.json?.data?.quiz?.completedAt !== null &&
+      results.reduce((sum, row) => sum + row.asked, 0) === 10 &&
+      results.reduce((sum, row) => sum + row.dontKnow, 0) === 4 &&
+      review.length === 10 &&
+      review.every((item) => typeof item.correctIndex === "number"),
+    describe(state),
+  );
+
+  r = await api(`${topic}/quiz/answer`, { body: { questionId: firstQuestion, answer: 1 }, cookie: a.cookie });
+  check("an answer is final", r.status === 409 && r.json?.error?.code === "question_locked", describe(r));
+  r = await api(`${topic}/quiz`, { cookie: a.cookie });
+  check("a topic gets only one quiz", r.status === 409 && r.json?.error?.code === "quiz_exists", describe(r));
+  r = await api(`${topic}/quiz/answer`, { body: { questionId: firstQuestion, answer: 0 }, cookie: b.cookie });
+  check("another account cannot answer the quiz", r.status === 404, describe(r));
+
+  // Three generations used so far (generate, regenerate, quiz); refused calls must not count.
+  const generations = [];
+  for (let i = 4; i <= GENERATION_LIMIT + 1; i++) {
+    generations.push(await api(`${draft}/generate`, { cookie: a.cookie }));
+  }
+  const lastAllowed = generations.at(-2);
+  const refused = generations.at(-1);
+  check(
+    `generations 4-${GENERATION_LIMIT} are allowed`,
+    generations.slice(0, -1).every((res) => res.status === 200) && lastAllowed?.json?.remaining === 0,
     lastAllowed ? describe(lastAllowed) : "no results",
   );
   check(

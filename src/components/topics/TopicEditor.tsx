@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type SubmitEvent, type ReactNode } from "react";
-import { Loader2, Lock, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { ClipboardList, Lock, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -19,11 +19,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Subtopic, TopicWithSubtopics } from "@/lib/topics/repository";
 import { CONTENT_TYPES, SUBTOPIC_NAME_MAX, SUBTOPICS_MAX, SUBTOPICS_MIN, type ContentType } from "@/lib/topics/schemas";
 import { callApi, type ApiError } from "./api";
+import { GeneratingNotice } from "./GeneratingNotice";
 import { CONTENT_TYPE_LABELS, TOPIC_STATUS_LABELS } from "./labels";
+
+// Progress of the topic's quiz, for the entry button on a confirmed topic (null: no quiz yet).
+export interface QuizSummary {
+  answered: number;
+  total: number;
+  completed: boolean;
+}
 
 interface Props {
   initial: TopicWithSubtopics;
   autoGenerate: boolean;
+  quiz: QuizSummary | null;
 }
 
 type Busy = "generate" | "save" | null;
@@ -31,7 +40,7 @@ type Busy = "generate" | "save" | null;
 // Portalled content (select menus, dialogs) renders outside the page's .dark wrapper.
 const PORTAL_THEME = "dark text-foreground";
 
-export default function TopicEditor({ initial, autoGenerate }: Props) {
+export default function TopicEditor({ initial, autoGenerate, quiz }: Props) {
   const [state, setState] = useState(initial);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<{ error: ApiError; retry: () => void } | null>(null);
@@ -78,7 +87,7 @@ export default function TopicEditor({ initial, autoGenerate }: Props) {
       {topic.scopeNote && <p className="text-muted-foreground text-sm">{topic.scopeNote}</p>}
 
       {busy === "generate" ? (
-        <GeneratingNotice />
+        <GeneratingNotice label="AI przygotowuje podtematy…" />
       ) : (
         error && (
           <Alert variant="destructive">
@@ -95,7 +104,7 @@ export default function TopicEditor({ initial, autoGenerate }: Props) {
       )}
 
       {!draft ? (
-        <ConfirmedList subtopics={subtopics} />
+        <ConfirmedList subtopics={subtopics} topicId={topic.id} quiz={quiz} />
       ) : subtopics.length === 0 ? (
         busy !== "generate" && (
           <div className="border-border space-y-3 rounded-lg border p-6 text-center">
@@ -161,29 +170,6 @@ export default function TopicEditor({ initial, autoGenerate }: Props) {
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-// The call can take tens of seconds; a ticking counter shows the app is still working.
-function GeneratingNotice() {
-  const [seconds, setSeconds] = useState(0);
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setSeconds((value) => value + 1);
-    }, 1000);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, []);
-
-  return (
-    <div role="status" className="border-border bg-card flex items-center gap-3 rounded-lg border p-4">
-      <Loader2 className="text-muted-foreground size-5 shrink-0 animate-spin" />
-      <div>
-        <p className="font-medium">AI przygotowuje podtematy…</p>
-        <p className="text-muted-foreground text-sm">To może potrwać kilkanaście sekund ({seconds} s).</p>
-      </div>
     </div>
   );
 }
@@ -298,7 +284,9 @@ function ContentTypeSelect(props: { value: ContentType; disabled: boolean; onCha
   );
 }
 
-function ConfirmedList({ subtopics }: { subtopics: Subtopic[] }) {
+function ConfirmedList(props: { subtopics: Subtopic[]; topicId: string; quiz: QuizSummary | null }) {
+  const { subtopics, quiz } = props;
+  const quizPath = `/topics/${props.topicId}/quiz`;
   return (
     <>
       <ul className="space-y-2">
@@ -312,11 +300,17 @@ function ConfirmedList({ subtopics }: { subtopics: Subtopic[] }) {
           </li>
         ))}
       </ul>
-      <Alert>
-        <AlertDescription>
-          Lista jest zatwierdzona i nie można jej już zmienić. Kolejnym krokiem będzie quiz diagnostyczny.
-        </AlertDescription>
-      </Alert>
+      <p className="text-muted-foreground text-sm">Lista jest zatwierdzona i nie można jej już zmienić.</p>
+      <Button asChild>
+        <a href={quiz ? quizPath : `${quizPath}?start=1`}>
+          <ClipboardList />
+          {quiz === null
+            ? "Rozpocznij quiz diagnostyczny"
+            : quiz.completed
+              ? "Zobacz wynik quizu"
+              : `Kontynuuj quiz (${quiz.answered}/${quiz.total})`}
+        </a>
+      </Button>
     </>
   );
 }

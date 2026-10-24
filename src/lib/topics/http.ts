@@ -3,6 +3,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { createClient } from "@/lib/supabase";
 import { topicErrorResponse } from "./errors";
+import { getQuizState, type QuizState } from "./quiz-repository";
 import { getTopic, type TopicWithSubtopics } from "./repository";
 import { isUuid } from "./schemas";
 
@@ -53,6 +54,17 @@ export async function topicState(supabase: SupabaseClient, id: string): Promise<
   const found = await readTopic(supabase, id);
   if (found instanceof Response) return found;
   return found ? Response.json({ data: found }) : topicErrorResponse("not_found");
+}
+
+// The topic's quiz state (null when it has no quiz), or the error response if reading fails.
+export async function readQuizState(supabase: SupabaseClient, topicId: string): Promise<QuizState | null | Response> {
+  try {
+    return await getQuizState(supabase, topicId);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[topics] reading quiz failed", error);
+    return topicErrorResponse("save_failed");
+  }
 }
 
 // A failed read still answers in the shared error shape, never with the runtime's bare 500.

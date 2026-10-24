@@ -1,3 +1,4 @@
+import { QUIZ_TASK } from "@/lib/topics/quiz-task";
 import { SUBTOPICS_TASK } from "@/lib/topics/subtopics-task";
 import type { FakeFixture } from "./fake";
 
@@ -19,8 +20,25 @@ const subtopics: FakeFixture = (request) => {
   };
 };
 
+// Reads the quotas from the prompt's <podtemat nr=".." pytan=".."> tags, so the quiz always
+// matches the schema; the correct answer is the first option (the server shuffles them).
+const quiz: FakeFixture = (request) => {
+  const tags = [...request.prompt.matchAll(/<podtemat nr="(\d+)" typ="\w+" pytan="(\d+)">([\s\S]*?)<\/podtemat>/g)];
+  return {
+    questions: tags.flatMap(([, nr, count, name]) =>
+      Array.from({ length: Number(count) }, (_, k) => ({
+        subtopicIndex: Number(nr),
+        question: `${name.slice(0, 60)}: pytanie ${k + 1}`,
+        options: [`Poprawna ${k + 1}`, `Błędna A${k + 1}`, `Błędna B${k + 1}`, `Błędna C${k + 1}`],
+        correctIndex: 0,
+      })),
+    ),
+  };
+};
+
 // Canned responses for AI_MODE=fake, one entry per task (the `task` passed to callAi).
 // Each slice that adds an AI task adds its fixture here.
 export const fakeFixtures: Record<string, FakeFixture> = {
   [SUBTOPICS_TASK]: subtopics,
+  [QUIZ_TASK]: quiz,
 };

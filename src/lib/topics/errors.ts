@@ -5,6 +5,9 @@ export type TopicErrorCode =
   | "topic_locked"
   | "duplicate_subtopic"
   | "subtopic_count"
+  | "topic_not_confirmed"
+  | "quiz_exists"
+  | "question_locked"
   | "save_failed";
 
 // Same shape as AiError (src/lib/ai/errors.ts), so the client handles one error format.
@@ -19,6 +22,9 @@ const errors: Record<TopicErrorCode, { message: string; retryable: boolean; stat
   },
   duplicate_subtopic: { message: "Taki podtemat już jest na liście.", retryable: false, status: 409 },
   subtopic_count: { message: "Temat musi mieć od 2 do 10 podtematów.", retryable: false, status: 422 },
+  topic_not_confirmed: { message: "Najpierw zatwierdź listę podtematów.", retryable: false, status: 409 },
+  quiz_exists: { message: "Ten temat ma już quiz diagnostyczny.", retryable: false, status: 409 },
+  question_locked: { message: "To pytanie ma już odpowiedź.", retryable: false, status: 409 },
   save_failed: { message: "Nie udało się zapisać zmian. Spróbuj ponownie.", retryable: true, status: 500 },
 };
 

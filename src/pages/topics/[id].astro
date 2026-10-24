@@ -3,6 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import TopicEditor from "@/components/topics/TopicEditor";
 import { createClient } from "@/lib/supabase";
+import { getQuizState } from "@/lib/topics/quiz-repository";
 import { getTopic } from "@/lib/topics/repository";
 import { isUuid } from "@/lib/topics/schemas";
 
@@ -18,6 +19,10 @@ const autoGenerate =
   found.topic.status === "draft" &&
   found.subtopics.length === 0 &&
   Astro.url.searchParams.get("generate") === "1";
+const quizState = supabase && found?.topic.status === "confirmed" ? await getQuizState(supabase, found.topic.id) : null;
+const quiz = quizState
+  ? { answered: quizState.quiz.answered, total: quizState.quiz.total, completed: quizState.quiz.completedAt !== null }
+  : null;
 ---
 
 <Layout title={found ? found.topic.name : "Nie znaleziono tematu"}>
@@ -25,7 +30,7 @@ const autoGenerate =
     <main class="mx-auto max-w-2xl p-4">
       <Topbar />
       {found ? (
-        <TopicEditor client:load initial={found} autoGenerate={autoGenerate} />
+        <TopicEditor client:load initial={found} autoGenerate={autoGenerate} quiz={quiz} />
       ) : (
         <div class="space-y-4">
           <h1 class="text-2xl font-semibold">Nie znaleziono tematu</h1>

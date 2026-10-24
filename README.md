@@ -203,7 +203,7 @@ BASE_URL=http://localhost:4321 npm run smoke
 
 It needs a reachable Supabase instance (local or cloud) with the GitHub provider enabled.
 
-`scripts/smoke-topics.mjs` covers the topic flow as signed-in users: create, generate (`AI_MODE=fake`), edit, regenerate, confirm, the lock, a second account and the daily generation limit (21st call → 429). It creates test accounts through the Supabase admin API and signs them in with a password, so it runs only in CI against the throwaway local stack: CI enables the email provider there (`enable_signup = false` in `supabase/config.toml` turns it off entirely) and passes `SUPABASE_SERVICE_ROLE_KEY` to that step only.
+`scripts/smoke-topics.mjs` covers the topic flow as signed-in users: create, generate (`AI_MODE=fake`), edit, regenerate, confirm, the lock, the diagnostic quiz (answers hidden until the end, one quiz per topic), a second account and the daily generation limit (21st call → 429). It creates test accounts through the Supabase admin API and signs them in with a password, so it runs only in CI against the throwaway local stack: CI enables the email provider there (`enable_signup = false` in `supabase/config.toml` turns it off entirely) and passes `SUPABASE_SERVICE_ROLE_KEY` to that step only.
 
 > **Note:** this script exists primarily to guard the development of the starter itself — it is a fast sanity check that dependency upgrades did not break the build, the Cloudflare adapter or the Supabase auth flow. It is **not** a substitute for a real test suite. Once you build your own product on top of this starter, add proper tests (unit, integration, end-to-end) suited to your application.
 

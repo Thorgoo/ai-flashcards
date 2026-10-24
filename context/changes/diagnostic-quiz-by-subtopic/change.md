@@ -1,9 +1,9 @@
 ---
-change_id: topic-with-confirmed-subtopics
-title: Topic with confirmed subtopics
-status: impl_reviewed
+change_id: diagnostic-quiz-by-subtopic
+title: Diagnostic quiz by subtopic
+status: implementing
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 archived_at: null
 ---
 
