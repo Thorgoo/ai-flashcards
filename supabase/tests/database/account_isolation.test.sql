@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(27);
+select plan(34);
 
 -- Two accounts (email sign-up is disabled, so users are inserted directly).
 insert into auth.users (id, email)
@@ -53,6 +53,33 @@ select public.create_quiz(
   (select jsonb_agg(jsonb_build_object(
      'subtopic_id', case when i % 2 = 0 then '00000000-0000-0000-0000-0000000000c1' else '00000000-0000-0000-0000-0000000000c2' end,
      'prompt', 'q' || i, 'options', jsonb_build_array('a', 'b', 'c', 'd'), 'correct_index', 0))
+   from generate_series(0, 9) as i)
+);
+-- A confirmed topic with a completed quiz and its first flashcard batch (writes go through
+-- claim_flashcard_batch / create_flashcard_batch only).
+insert into public.topics (id, name) values ('00000000-0000-0000-0000-0000000000a3', 'a-flashcard-topic');
+insert into public.subtopics (id, topic_id, name, content_type, position)
+values
+  ('00000000-0000-0000-0000-0000000000c3', '00000000-0000-0000-0000-0000000000a3', 'a-s3', 'conceptual', 0),
+  ('00000000-0000-0000-0000-0000000000c4', '00000000-0000-0000-0000-0000000000a3', 'a-s4', 'conceptual', 1);
+update public.topics set status = 'confirmed' where id = '00000000-0000-0000-0000-0000000000a3';
+select public.create_quiz(
+  '00000000-0000-0000-0000-0000000000a3',
+  (select jsonb_agg(jsonb_build_object(
+     'subtopic_id', case when i % 2 = 0 then '00000000-0000-0000-0000-0000000000c3' else '00000000-0000-0000-0000-0000000000c4' end,
+     'prompt', 'q' || i, 'options', jsonb_build_array('a', 'b', 'c', 'd'), 'correct_index', 0))
+   from generate_series(0, 9) as i)
+);
+select public.answer_quiz_question(q.id, 0::smallint)
+from public.quiz_questions q
+where q.topic_id = '00000000-0000-0000-0000-0000000000a3';
+select public.claim_flashcard_batch('00000000-0000-0000-0000-0000000000a3');
+select public.create_flashcard_batch(
+  '00000000-0000-0000-0000-0000000000a3',
+  (select jsonb_agg(jsonb_build_object(
+     'subtopic_id', case when i % 2 = 0 then '00000000-0000-0000-0000-0000000000c3' else '00000000-0000-0000-0000-0000000000c4' end,
+     'front', 'f' || i, 'answer', 'a' || i, 'options', jsonb_build_array('a', 'b', 'c', 'd'),
+     'correct_index', 0, 'explanation', 'e' || i, 'example', null))
    from generate_series(0, 9) as i)
 );
 
@@ -109,6 +136,25 @@ select throws_ok(
   null,
   'account B cannot insert a quiz owned by A'
 );
+select is((select count(*) from public.flashcard_batches), 0::bigint, 'account B sees none of A''s flashcard batches');
+select is((select count(*) from public.flashcards), 0::bigint, 'account B sees none of A''s flashcards');
+select lives_ok($$ delete from public.flashcards $$, 'account B flashcard delete runs without error');
+select throws_ok($$ delete from public.flashcard_batches $$, '42501', null, 'account B cannot delete flashcard batches directly');
+select throws_ok(
+  $$ insert into public.flashcard_batches (user_id, topic_id, seq)
+     values ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000a3', 2) $$,
+  '42501',
+  null,
+  'account B cannot insert a flashcard batch owned by A'
+);
+select throws_ok(
+  $$ insert into public.flashcards (user_id, topic_id, batch_id, subtopic_id, position, front, answer, options, correct_index, explanation)
+     values ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000a3', gen_random_uuid(),
+             '00000000-0000-0000-0000-0000000000c3', 0, 'f', 'a', array['a', 'b', 'c', 'd'], 0, 'e') $$,
+  '42501',
+  null,
+  'account B cannot insert a flashcard owned by A'
+);
 select lives_ok(
   $$ update public.isolation_probe set note = 'b-was-here' $$,
   'account B update runs without error'
@@ -142,6 +188,12 @@ select is(
   (select count(*) from public.quiz_questions q join public.quizzes z on z.id = q.quiz_id where q.answer is null),
   10::bigint,
   'account A quiz is unchanged after account B'
+);
+select results_eq(
+  $$ select b.status, count(f.id) from public.flashcard_batches b
+     left join public.flashcards f on f.batch_id = b.id group by b.status $$,
+  $$ values ('ready'::text, 10::bigint) $$,
+  'account A flashcard batch and cards are unchanged after account B'
 );
 
 -- Anonymous callers have no privileges on app tables at all (migration revoke_anon_default_privileges).
