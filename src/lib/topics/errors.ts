@@ -7,6 +7,7 @@ export type TopicErrorCode =
   | "subtopic_count"
   | "topic_not_confirmed"
   | "quiz_exists"
+  | "quiz_generating"
   | "question_locked"
   | "save_failed";
 
@@ -24,6 +25,7 @@ const errors: Record<TopicErrorCode, { message: string; retryable: boolean; stat
   subtopic_count: { message: "Temat musi mieć od 2 do 10 podtematów.", retryable: false, status: 422 },
   topic_not_confirmed: { message: "Najpierw zatwierdź listę podtematów.", retryable: false, status: 409 },
   quiz_exists: { message: "Ten temat ma już quiz diagnostyczny.", retryable: false, status: 409 },
+  quiz_generating: { message: "Quiz jest właśnie przygotowywany.", retryable: false, status: 409 },
   question_locked: { message: "To pytanie ma już odpowiedź.", retryable: false, status: 409 },
   save_failed: { message: "Nie udało się zapisać zmian. Spróbuj ponownie.", retryable: true, status: 500 },
 };

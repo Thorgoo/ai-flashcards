@@ -1,6 +1,6 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import type { TopicErrorCode } from "./errors";
-import type { QuizRow } from "./quiz-task";
+import { QUIZ_CLAIM_TTL_SECONDS, type QuizRow } from "./quiz-task";
 import type { RepoResult } from "./repository";
 import type { ContentType } from "./schemas";
 
@@ -34,8 +34,9 @@ export interface QuizReviewItem {
   correctIndex: number;
 }
 
+// "generating": the quiz is claimed and its AI call is still running; it has no questions yet.
 export interface QuizState {
-  quiz: { id: string; total: number; answered: number; completedAt: string | null };
+  quiz: { id: string; status: "generating" | "ready"; total: number; answered: number; completedAt: string | null };
   question: QuizQuestionView | null;
   results: QuizSubtopicResult[] | null;
   review: QuizReviewItem[] | null;
@@ -60,13 +61,12 @@ interface ResultRow {
   dont_know: number;
 }
 
-// The create_quiz / answer_quiz_question functions name the reason in the message.
+const P0409_REASONS: TopicErrorCode[] = ["topic_not_confirmed", "quiz_exists", "quiz_generating", "question_locked"];
+
+// The quiz functions share P0409 and name the reason in the hint (migration quiz_generation_claim).
 function errorCode(error: PostgrestError): TopicErrorCode {
-  if (error.code === "P0409") {
-    if (error.message.includes("quiz_exists")) return "quiz_exists";
-    if (error.message.includes("topic_not_confirmed")) return "topic_not_confirmed";
-    if (error.message.includes("question_locked")) return "question_locked";
-  }
+  const reason = P0409_REASONS.find((code) => code === error.hint);
+  if (error.code === "P0409" && reason) return reason;
   // eslint-disable-next-line no-console
   console.error("[topics] quiz database error", error);
   return "save_failed";
@@ -76,9 +76,9 @@ function errorCode(error: PostgrestError): TopicErrorCode {
 export async function getQuizState(supabase: SupabaseClient, topicId: string): Promise<QuizState | null> {
   const quizResult = await supabase
     .from("quizzes")
-    .select("id, completed_at")
+    .select("id, status, claimed_at, completed_at")
     .eq("topic_id", topicId)
-    .maybeSingle<{ id: string; completed_at: string | null }>();
+    .maybeSingle<{ id: string; status: "generating" | "ready"; claimed_at: string; completed_at: string | null }>();
   if (quizResult.error) {
     throw new Error(`loading quiz failed: ${quizResult.error.message}`);
   }
@@ -86,6 +86,16 @@ export async function getQuizState(supabase: SupabaseClient, topicId: string): P
     return null;
   }
   const quiz = quizResult.data;
+  if (quiz.status === "generating") {
+    // An abandoned claim reads as no quiz: the next start takes it over.
+    if (Date.now() - Date.parse(quiz.claimed_at) > QUIZ_CLAIM_TTL_SECONDS * 1000) return null;
+    return {
+      quiz: { id: quiz.id, status: "generating", total: 0, answered: 0, completedAt: null },
+      question: null,
+      results: null,
+      review: null,
+    };
+  }
 
   const [questionsResult, subtopicsResult] = await Promise.all([
     supabase
@@ -107,7 +117,7 @@ export async function getQuizState(supabase: SupabaseClient, topicId: string): P
 
   const answered = questions.filter((question) => question.answer !== null).length;
   const state: QuizState = {
-    quiz: { id: quiz.id, total: questions.length, answered, completedAt: quiz.completed_at },
+    quiz: { id: quiz.id, status: "ready", total: questions.length, answered, completedAt: quiz.completed_at },
     question: null,
     results: null,
     review: null,
@@ -149,6 +159,23 @@ export async function getQuizState(supabase: SupabaseClient, topicId: string): P
     correctIndex: question.correct_index,
   }));
   return state;
+}
+
+// Reserves the topic's quiz before the AI call: refuses a second quiz and a generation
+// already running in another request (claim_quiz).
+export async function claimQuiz(supabase: SupabaseClient, topicId: string): Promise<RepoResult<null>> {
+  const { error } = await supabase.rpc("claim_quiz", { p_topic_id: topicId });
+  return error ? { ok: false, code: errorCode(error) } : { ok: true, value: null };
+}
+
+// Drops an unfinished claim after a failed AI call or save, so the quiz can start again.
+export async function releaseQuizClaim(supabase: SupabaseClient, topicId: string): Promise<void> {
+  const { error } = await supabase.rpc("release_quiz_claim", { p_topic_id: topicId });
+  if (error) {
+    // The claim expires on its own (QUIZ_CLAIM_TTL_SECONDS); the original error matters more.
+    // eslint-disable-next-line no-console
+    console.error("[topics] releasing quiz claim failed", error);
+  }
 }
 
 // Atomic: the quiz and all 10 questions are saved, or nothing is (create_quiz).

@@ -24,6 +24,7 @@ import { CONTENT_TYPE_LABELS, TOPIC_STATUS_LABELS } from "./labels";
 
 // Progress of the topic's quiz, for the entry button on a confirmed topic (null: no quiz yet).
 export interface QuizSummary {
+  generating: boolean;
   answered: number;
   total: number;
   completed: boolean;
@@ -306,9 +307,11 @@ function ConfirmedList(props: { subtopics: Subtopic[]; topicId: string; quiz: Qu
           <ClipboardList />
           {quiz === null
             ? "Rozpocznij quiz diagnostyczny"
-            : quiz.completed
-              ? "Zobacz wynik quizu"
-              : `Kontynuuj quiz (${quiz.answered}/${quiz.total})`}
+            : quiz.generating
+              ? "Quiz w przygotowaniu…"
+              : quiz.completed
+                ? "Zobacz wynik quizu"
+                : `Kontynuuj quiz (${quiz.answered}/${quiz.total})`}
         </a>
       </Button>
     </>

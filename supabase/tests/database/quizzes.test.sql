@@ -1,10 +1,11 @@
 -- Diagnostic quiz (migration create_diagnostic_quizzes): one quiz per confirmed topic with
 -- exactly 10 questions saved atomically, each in a subtopic of that topic; answers are final
 -- and only written through answer_quiz_question; results come from the answers.
+-- Migration quiz_generation_claim: claim_quiz reserves the quiz before the AI call.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(24);
+select plan(38);
 
 insert into auth.users (id, email)
 values
@@ -19,6 +20,17 @@ select set_config('test.questions', (
       '00000000-0000-0000-0000-0000000000c1',
       '00000000-0000-0000-0000-0000000000c2',
       '00000000-0000-0000-0000-0000000000c3'])[1 + i % 3],
+    'prompt', 'Pytanie ' || i,
+    'options', jsonb_build_array('dobra', 'zła 1', 'zła 2', 'zła 3'),
+    'correct_index', 0) order by i)::text
+  from generate_series(0, 9) as i
+), true);
+
+select set_config('test.questions_a3', (
+  select jsonb_agg(jsonb_build_object(
+    'subtopic_id', (array[
+      '00000000-0000-0000-0000-0000000000e1',
+      '00000000-0000-0000-0000-0000000000e2'])[1 + i % 2],
     'prompt', 'Pytanie ' || i,
     'options', jsonb_build_array('dobra', 'zła 1', 'zła 2', 'zła 3'),
     'correct_index', 0) order by i)::text
@@ -134,6 +146,65 @@ select results_eq(
   'quiz_results counts asked, correct and "I don''t know" per subtopic, in subtopic order'
 );
 
+-- Generation claim (migration quiz_generation_claim), on topic a3.
+select lives_ok(
+  $$ select public.claim_quiz('00000000-0000-0000-0000-0000000000a3') $$,
+  'the owner claims the quiz before the AI call'
+);
+select is(
+  (select status from public.quizzes where topic_id = '00000000-0000-0000-0000-0000000000a3'),
+  'generating',
+  'a claimed quiz is generating'
+);
+select throws_ok(
+  $$ select public.claim_quiz('00000000-0000-0000-0000-0000000000a3') $$,
+  'P0409',
+  'quiz_generating',
+  'a running generation cannot be claimed again'
+);
+select lives_ok(
+  $$ select public.release_quiz_claim('00000000-0000-0000-0000-0000000000a3') $$,
+  'the owner releases the claim after a failed AI call'
+);
+select is(
+  (select count(*) from public.quizzes where topic_id = '00000000-0000-0000-0000-0000000000a3'),
+  0::bigint,
+  'a released claim leaves no quiz behind'
+);
+select lives_ok(
+  $$ select public.claim_quiz('00000000-0000-0000-0000-0000000000a3') $$,
+  'a released quiz can be claimed again'
+);
+
+reset role;
+update public.quizzes set claimed_at = now() - interval '2 minutes'
+where topic_id = '00000000-0000-0000-0000-0000000000a3';
+set local role authenticated;
+
+select lives_ok(
+  $$ select public.claim_quiz('00000000-0000-0000-0000-0000000000a3') $$,
+  'an abandoned claim (older than 90 s) is taken over'
+);
+select lives_ok(
+  $$ select public.create_quiz('00000000-0000-0000-0000-0000000000a3', current_setting('test.questions_a3')::jsonb) $$,
+  'create_quiz fills the claim'
+);
+select results_eq(
+  $$ select q.status, count(qq.id)
+     from public.quizzes q left join public.quiz_questions qq on qq.quiz_id = q.id
+     where q.topic_id = '00000000-0000-0000-0000-0000000000a3'
+     group by q.status $$,
+  $$ values ('ready'::text, 10::bigint) $$,
+  'the filled claim is one ready quiz with 10 questions'
+);
+select throws_ok(
+  $$ select public.claim_quiz('00000000-0000-0000-0000-0000000000a3') $$,
+  'P0409',
+  'quiz_exists',
+  'a ready quiz cannot be claimed'
+);
+select throws_ok($$ truncate public.quiz_questions $$, '42501', null, 'questions cannot be truncated');
+
 -- Another account.
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
 
@@ -153,6 +224,12 @@ select throws_ok(
   'topic_not_confirmed',
   'another account cannot create a quiz for A''s topic'
 );
+select throws_ok(
+  $$ select public.claim_quiz('00000000-0000-0000-0000-0000000000a3') $$,
+  'P0409',
+  'topic_not_confirmed',
+  'another account cannot claim a quiz for A''s topic'
+);
 
 -- Deleting the topic still cascades to its quiz (referential actions bypass the revoked privileges).
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
@@ -161,7 +238,11 @@ select lives_ok(
   $$ delete from public.topics where id = '00000000-0000-0000-0000-0000000000a1' $$,
   'deleting a topic cascades to its quiz'
 );
-select is((select count(*) from public.quiz_questions), 0::bigint, 'the quiz questions are gone with the topic');
+select is(
+  (select count(*) from public.quiz_questions where quiz_id = current_setting('test.quiz')::uuid),
+  0::bigint,
+  'the quiz questions are gone with the topic'
+);
 
 reset role;
 
@@ -176,6 +257,14 @@ select ok(
 select ok(
   not has_function_privilege('anon', 'public.quiz_results(uuid)', 'execute'),
   'anon cannot execute quiz_results'
+);
+select ok(
+  not has_function_privilege('anon', 'public.claim_quiz(uuid)', 'execute'),
+  'anon cannot execute claim_quiz'
+);
+select ok(
+  not has_function_privilege('anon', 'public.release_quiz_claim(uuid)', 'execute'),
+  'anon cannot execute release_quiz_claim'
 );
 
 select * from finish();

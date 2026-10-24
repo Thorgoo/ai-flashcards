@@ -4,7 +4,7 @@
 
 - A topic is a `draft` until confirmed; confirming is permanent and needs 2–10 subtopics. RLS and triggers on `topics`/`subtopics` enforce it, so never rely on the API check alone or relax those policies. Later slices may assume a confirmed list never changes.
 - Replace a whole list only through `replaceSubtopics` (atomic, FR-028).
-- One quiz per confirmed topic. `authenticated` only reads `quizzes`/`quiz_questions`; writes go through `create_quiz` and `answer_quiz_question` (answers are final). A question's subtopic belongs to its topic by composite foreign key.
+- One quiz per confirmed topic. `authenticated` only reads `quizzes`/`quiz_questions`; writes go through `claim_quiz` (before the AI call), `create_quiz` and `answer_quiz_question` (answers are final). Quiz functions name the error in the `hint`. A question's subtopic belongs to its topic by composite foreign key.
 - Per-subtopic results come only from `quiz_results` (computed from answers); S-04 reads the same.
 
 ## Endpoints

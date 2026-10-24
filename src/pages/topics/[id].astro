@@ -3,7 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import TopicEditor from "@/components/topics/TopicEditor";
 import { createClient } from "@/lib/supabase";
-import { getQuizState } from "@/lib/topics/quiz-repository";
+import { getQuizState, type QuizState } from "@/lib/topics/quiz-repository";
 import { getTopic } from "@/lib/topics/repository";
 import { isUuid } from "@/lib/topics/schemas";
 
@@ -19,9 +19,23 @@ const autoGenerate =
   found.topic.status === "draft" &&
   found.subtopics.length === 0 &&
   Astro.url.searchParams.get("generate") === "1";
-const quizState = supabase && found?.topic.status === "confirmed" ? await getQuizState(supabase, found.topic.id) : null;
+// A failed quiz read must not take the topic down with it; the quiz page reports it.
+let quizState: QuizState | null = null;
+if (supabase && found?.topic.status === "confirmed") {
+  try {
+    quizState = await getQuizState(supabase, found.topic.id);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[topics] reading quiz failed", error);
+  }
+}
 const quiz = quizState
-  ? { answered: quizState.quiz.answered, total: quizState.quiz.total, completed: quizState.quiz.completedAt !== null }
+  ? {
+      generating: quizState.quiz.status === "generating",
+      answered: quizState.quiz.answered,
+      total: quizState.quiz.total,
+      completed: quizState.quiz.completedAt !== null,
+    }
   : null;
 ---
 
