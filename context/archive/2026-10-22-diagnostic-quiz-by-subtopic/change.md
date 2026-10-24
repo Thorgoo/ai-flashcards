@@ -1,10 +1,10 @@
 ---
 change_id: diagnostic-quiz-by-subtopic
 title: Diagnostic quiz by subtopic
-status: impl_reviewed
+status: archived
 created: 2026-10-22
 updated: 2026-10-24
-archived_at: null
+archived_at: 2026-10-24T08:47:10Z
 ---
 
 ## Notes
