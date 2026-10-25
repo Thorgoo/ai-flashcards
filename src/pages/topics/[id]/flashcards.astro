@@ -1,0 +1,70 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import FlashcardBatch from "@/components/topics/FlashcardBatch";
+import { createClient } from "@/lib/supabase";
+import { getFlashcardState, type FlashcardState } from "@/lib/topics/flashcard-repository";
+import { getQuizState } from "@/lib/topics/quiz-repository";
+import { getTopic } from "@/lib/topics/repository";
+import { isUuid } from "@/lib/topics/schemas";
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+const id = Astro.params.id ?? "";
+// Missing and other accounts' topics look the same: not found.
+const found = supabase && isUuid(id) ? await getTopic(supabase, id) : null;
+if (!found) {
+  Astro.response.status = 404;
+}
+// Flashcards come from the quiz results: a draft topic or an unfinished quiz points back to the topic.
+let blocked: string | null = found && found.topic.status !== "confirmed" ? "Najpierw zatwierdź listę podtematów" : null;
+let failed = false;
+let state: FlashcardState | null = null;
+if (supabase && found && !blocked) {
+  try {
+    const quiz = await getQuizState(supabase, found.topic.id);
+    if (!quiz?.quiz.completedAt) {
+      blocked = "Najpierw ukończ quiz diagnostyczny";
+    } else {
+      state = await getFlashcardState(supabase, found.topic.id);
+    }
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[topics] reading flashcards failed", error);
+    failed = true;
+  }
+}
+const autoStart = !blocked && !failed && state === null && Astro.url.searchParams.get("start") === "1";
+---
+
+<Layout title={found ? `Fiszki: ${found.topic.name}` : "Nie znaleziono tematu"}>
+  <div class="dark bg-background text-foreground min-h-screen">
+    <main class="mx-auto max-w-2xl p-4">
+      <Topbar />
+      {found && (blocked || failed) ? (
+        <div class="space-y-4">
+          <h1 class="text-2xl font-semibold break-words">
+            {blocked ?? "Nie udało się wczytać fiszek. Odśwież stronę za chwilę."}
+          </h1>
+          <a href={`/topics/${found.topic.id}`} class="text-primary break-words underline underline-offset-4">
+            Wróć do tematu „{found.topic.name}”
+          </a>
+        </div>
+      ) : found ? (
+        <FlashcardBatch
+          client:load
+          topicId={found.topic.id}
+          topicName={found.topic.name}
+          initial={state}
+          autoStart={autoStart}
+        />
+      ) : (
+        <div class="space-y-4">
+          <h1 class="text-2xl font-semibold">Nie znaleziono tematu</h1>
+          <a href="/dashboard" class="text-primary underline underline-offset-4">
+            Wróć do listy tematów
+          </a>
+        </div>
+      )}
+    </main>
+  </div>
+</Layout>

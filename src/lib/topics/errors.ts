@@ -9,6 +9,10 @@ export type TopicErrorCode =
   | "quiz_exists"
   | "quiz_generating"
   | "question_locked"
+  | "quiz_not_completed"
+  | "batch_exists"
+  | "batch_generating"
+  | "flashcard_not_found"
   | "save_failed";
 
 // Same shape as AiError (src/lib/ai/errors.ts), so the client handles one error format.
@@ -27,6 +31,10 @@ const errors: Record<TopicErrorCode, { message: string; retryable: boolean; stat
   quiz_exists: { message: "Ten temat ma już quiz diagnostyczny.", retryable: false, status: 409 },
   quiz_generating: { message: "Quiz jest właśnie przygotowywany.", retryable: false, status: 409 },
   question_locked: { message: "To pytanie ma już odpowiedź.", retryable: false, status: 409 },
+  quiz_not_completed: { message: "Najpierw ukończ quiz diagnostyczny.", retryable: false, status: 409 },
+  batch_exists: { message: "Ten temat ma już pierwszą partię fiszek.", retryable: false, status: 409 },
+  batch_generating: { message: "Fiszki są właśnie przygotowywane.", retryable: false, status: 409 },
+  flashcard_not_found: { message: "Nie znaleziono fiszki.", retryable: false, status: 404 },
   save_failed: { message: "Nie udało się zapisać zmian. Spróbuj ponownie.", retryable: true, status: 500 },
 };
 

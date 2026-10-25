@@ -3,6 +3,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { createClient } from "@/lib/supabase";
 import { topicErrorResponse } from "./errors";
+import { getFlashcardState, type FlashcardState } from "./flashcard-repository";
 import { getQuizState, type QuizState } from "./quiz-repository";
 import { getTopic, type TopicWithSubtopics } from "./repository";
 import { isUuid } from "./schemas";
@@ -63,6 +64,20 @@ export async function readQuizState(supabase: SupabaseClient, topicId: string): 
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("[topics] reading quiz failed", error);
+    return topicErrorResponse("save_failed");
+  }
+}
+
+// The topic's first flashcard batch (null without one), or the error response if reading fails.
+export async function readFlashcardState(
+  supabase: SupabaseClient,
+  topicId: string,
+): Promise<FlashcardState | null | Response> {
+  try {
+    return await getFlashcardState(supabase, topicId);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[topics] reading flashcards failed", error);
     return topicErrorResponse("save_failed");
   }
 }

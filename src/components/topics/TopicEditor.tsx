@@ -1,17 +1,6 @@
-import { useEffect, useRef, useState, type SubmitEvent, type ReactNode } from "react";
-import { ClipboardList, Lock, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState, type SubmitEvent } from "react";
+import { ClipboardList, Layers, Lock, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Subtopic, TopicWithSubtopics } from "@/lib/topics/repository";
 import { CONTENT_TYPES, SUBTOPIC_NAME_MAX, SUBTOPICS_MAX, SUBTOPICS_MIN, type ContentType } from "@/lib/topics/schemas";
 import { callApi, type ApiError } from "./api";
+import { Confirmation, PORTAL_THEME } from "./Confirmation";
 import { GeneratingNotice } from "./GeneratingNotice";
 import { CONTENT_TYPE_LABELS, TOPIC_STATUS_LABELS } from "./labels";
 
@@ -34,14 +24,13 @@ interface Props {
   initial: TopicWithSubtopics;
   autoGenerate: boolean;
   quiz: QuizSummary | null;
+  // Whether the topic already has its first flashcard batch (ready or generating).
+  hasFlashcards: boolean;
 }
 
 type Busy = "generate" | "save" | null;
 
-// Portalled content (select menus, dialogs) renders outside the page's .dark wrapper.
-const PORTAL_THEME = "dark text-foreground";
-
-export default function TopicEditor({ initial, autoGenerate, quiz }: Props) {
+export default function TopicEditor({ initial, autoGenerate, quiz, hasFlashcards }: Props) {
   const [state, setState] = useState(initial);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<{ error: ApiError; retry: () => void } | null>(null);
@@ -105,7 +94,7 @@ export default function TopicEditor({ initial, autoGenerate, quiz }: Props) {
       )}
 
       {!draft ? (
-        <ConfirmedList subtopics={subtopics} topicId={topic.id} quiz={quiz} />
+        <ConfirmedList subtopics={subtopics} topicId={topic.id} quiz={quiz} hasFlashcards={hasFlashcards} />
       ) : subtopics.length === 0 ? (
         busy !== "generate" && (
           <div className="border-border space-y-3 rounded-lg border p-6 text-center">
@@ -285,9 +274,15 @@ function ContentTypeSelect(props: { value: ContentType; disabled: boolean; onCha
   );
 }
 
-function ConfirmedList(props: { subtopics: Subtopic[]; topicId: string; quiz: QuizSummary | null }) {
+function ConfirmedList(props: {
+  subtopics: Subtopic[];
+  topicId: string;
+  quiz: QuizSummary | null;
+  hasFlashcards: boolean;
+}) {
   const { subtopics, quiz } = props;
   const quizPath = `/topics/${props.topicId}/quiz`;
+  const flashcardsPath = `/topics/${props.topicId}/flashcards`;
   return (
     <>
       <ul className="space-y-2">
@@ -302,42 +297,28 @@ function ConfirmedList(props: { subtopics: Subtopic[]; topicId: string; quiz: Qu
         ))}
       </ul>
       <p className="text-muted-foreground text-sm">Lista jest zatwierdzona i nie można jej już zmienić.</p>
-      <Button asChild>
-        <a href={quiz ? quizPath : `${quizPath}?start=1`}>
-          <ClipboardList />
-          {quiz === null
-            ? "Rozpocznij quiz diagnostyczny"
-            : quiz.generating
-              ? "Quiz w przygotowaniu…"
-              : quiz.completed
-                ? "Zobacz wynik quizu"
-                : `Kontynuuj quiz (${quiz.answered}/${quiz.total})`}
-        </a>
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant={quiz?.completed ? "outline" : "default"}>
+          <a href={quiz ? quizPath : `${quizPath}?start=1`}>
+            <ClipboardList />
+            {quiz === null
+              ? "Rozpocznij quiz diagnostyczny"
+              : quiz.generating
+                ? "Quiz w przygotowaniu…"
+                : quiz.completed
+                  ? "Zobacz wynik quizu"
+                  : `Kontynuuj quiz (${quiz.answered}/${quiz.total})`}
+          </a>
+        </Button>
+        {quiz?.completed && (
+          <Button asChild>
+            <a href={props.hasFlashcards ? flashcardsPath : `${flashcardsPath}?start=1`}>
+              <Layers />
+              {props.hasFlashcards ? "Zobacz fiszki" : "Wygeneruj fiszki"}
+            </a>
+          </Button>
+        )}
+      </div>
     </>
-  );
-}
-
-function Confirmation(props: {
-  trigger: ReactNode;
-  title: string;
-  description: string;
-  action: string;
-  onConfirm: () => void;
-}) {
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>{props.trigger}</AlertDialogTrigger>
-      <AlertDialogContent className={PORTAL_THEME}>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{props.title}</AlertDialogTitle>
-          <AlertDialogDescription>{props.description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Anuluj</AlertDialogCancel>
-          <AlertDialogAction onClick={props.onConfirm}>{props.action}</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }
