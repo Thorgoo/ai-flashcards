@@ -330,14 +330,14 @@ Migracja tylko rozszerzająca (dwie nowe tabele, trzy funkcje); nie dotyka istni
 
 #### Automated
 
-- [x] 3.1 `npm test`, `npm run lint`, `npm run build` przechodzą
-- [ ] 3.2 CI `smoke` (z `smoke-topics.mjs`) przechodzi z nowymi krokami fiszek
+- [x] 3.1 `npm test`, `npm run lint`, `npm run build` przechodzą — c6831ca
+- [x] 3.2 CI `smoke` (z `smoke-topics.mjs`) przechodzi z nowymi krokami fiszek — c6831ca
 
 ### Phase 4: UI
 
 #### Automated
 
-- [ ] 4.1 `npm test`, `npm run lint`, `npm run build` przechodzą
+- [x] 4.1 `npm test`, `npm run lint`, `npm run build` przechodzą
 - [ ] 4.2 CI `smoke` przechodzi
 
 #### Manual

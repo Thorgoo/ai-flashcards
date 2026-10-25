@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, CircleHelp, X } from "lucide-react";
+import { ArrowLeft, Check, CircleHelp, Layers, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ interface Props {
   topicName: string;
   initial: QuizState | null;
   autoStart: boolean;
+  // Whether the topic already has its first flashcard batch (ready or generating).
+  hasFlashcards: boolean;
 }
 
 type Busy = "generate" | "answer" | null;
@@ -20,7 +22,7 @@ type Busy = "generate" | "answer" | null;
 const LETTERS = ["A", "B", "C", "D"];
 const POLL_MS = 2000;
 
-export default function QuizRunner({ topicId, topicName, initial, autoStart }: Props) {
+export default function QuizRunner({ topicId, topicName, initial, autoStart, hasFlashcards }: Props) {
   const [state, setState] = useState(initial);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<{ error: ApiError; retry: () => void } | null>(null);
@@ -162,13 +164,25 @@ export default function QuizRunner({ topicId, topicName, initial, autoStart }: P
           </div>
         </section>
       ) : (
-        <QuizResults results={state.results ?? []} review={state.review ?? []} />
+        <QuizResults
+          topicId={topicId}
+          hasFlashcards={hasFlashcards}
+          results={state.results ?? []}
+          review={state.review ?? []}
+        />
       )}
     </div>
   );
 }
 
-function QuizResults({ results, review }: { results: QuizSubtopicResult[]; review: QuizReviewItem[] }) {
+function QuizResults(props: {
+  topicId: string;
+  hasFlashcards: boolean;
+  results: QuizSubtopicResult[];
+  review: QuizReviewItem[];
+}) {
+  const { results, review } = props;
+  const flashcardsPath = `/topics/${props.topicId}/flashcards`;
   return (
     <div className="space-y-6">
       <section className="space-y-2">
@@ -187,6 +201,12 @@ function QuizResults({ results, review }: { results: QuizSubtopicResult[]; revie
             </li>
           ))}
         </ul>
+        <Button asChild>
+          <a href={props.hasFlashcards ? flashcardsPath : `${flashcardsPath}?start=1`}>
+            <Layers />
+            {props.hasFlashcards ? "Zobacz fiszki" : "Wygeneruj fiszki"}
+          </a>
+        </Button>
       </section>
 
       <section className="space-y-3">
