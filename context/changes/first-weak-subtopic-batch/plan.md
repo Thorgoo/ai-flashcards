@@ -316,7 +316,7 @@ Migracja tylko rozszerzająca (dwie nowe tabele, trzy funkcje); nie dotyka istni
 
 #### Manual
 
-- [ ] 1.4 Migracja wypchnięta `db push` na produkcyjne Supabase przed merge, bez błędów
+- [x] 1.4 Migracja wypchnięta `db push` na produkcyjne Supabase przed merge, bez błędów
 
 ### Phase 2: Domena i zadanie AI
 
@@ -337,8 +337,8 @@ Migracja tylko rozszerzająca (dwie nowe tabele, trzy funkcje); nie dotyka istni
 
 #### Automated
 
-- [x] 4.1 `npm test`, `npm run lint`, `npm run build` przechodzą
-- [ ] 4.2 CI `smoke` przechodzi
+- [x] 4.1 `npm test`, `npm run lint`, `npm run build` przechodzą — 79fa55b
+- [x] 4.2 CI `smoke` przechodzi — 79fa55b
 
 #### Manual
 
