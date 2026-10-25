@@ -310,9 +310,9 @@ Migracja tylko rozszerzająca (dwie nowe tabele, trzy funkcje); nie dotyka istni
 
 #### Automated
 
-- [ ] 1.1 CI `smoke` → `Database tests` przechodzi z nowym `flashcards.test.sql` i rozszerzonym `account_isolation.test.sql`
-- [ ] 1.2 `rls_guard.test.sql` przechodzi bez nowych wpisów w `rls_guard_exceptions`
-- [x] 1.3 `npm run lint` przechodzi
+- [x] 1.1 CI `smoke` → `Database tests` przechodzi z nowym `flashcards.test.sql` i rozszerzonym `account_isolation.test.sql` — ef13c98
+- [x] 1.2 `rls_guard.test.sql` przechodzi bez nowych wpisów w `rls_guard_exceptions` — ef13c98
+- [x] 1.3 `npm run lint` przechodzi — ef13c98
 
 #### Manual
 
@@ -322,9 +322,9 @@ Migracja tylko rozszerzająca (dwie nowe tabele, trzy funkcje); nie dotyka istni
 
 #### Automated
 
-- [ ] 2.1 `npm test` przechodzi z nowym `flashcards-task.test.ts`
-- [ ] 2.2 `npm run lint` przechodzi
-- [ ] 2.3 `npm run build` przechodzi
+- [x] 2.1 `npm test` przechodzi z nowym `flashcards-task.test.ts`
+- [x] 2.2 `npm run lint` przechodzi
+- [x] 2.3 `npm run build` przechodzi
 
 ### Phase 3: API
 
