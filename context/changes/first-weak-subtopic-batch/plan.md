@@ -342,10 +342,10 @@ Migracja tylko rozszerzająca (dwie nowe tabele, trzy funkcje); nie dotyka istni
 
 #### Manual
 
-- [ ] 4.3 Na podglądzie z prawdziwym AI: quiz → „Wygeneruj fiszki” → 10 fiszek w podziale z reguły rozdziału; zanotuj `latency_ms` i `output_tokens` z `ai_calls` (próg: < 75 s, bez `ai_invalid_output` z powodu `max_tokens`)
-- [ ] 4.4 Temat językowy: fiszki słownikowe mają słowo, 4 tłumaczenia, przykładowe zdanie; pojęciowe — pytanie na 2–3 zdania
-- [ ] 4.5 „Czytaj więcej” rozwija wyjaśnienie bez żadnego żądania sieciowego
-- [ ] 4.6 Przeładowanie strony w trakcie generowania kończy się pokazaniem partii po odpytywaniu, a `remaining` spada o 1
-- [ ] 4.7 Usunięcie fiszki po potwierdzeniu znika ją także po przeładowaniu; anulowanie nic nie zmienia
-- [ ] 4.8 Strona fiszek używalna na telefonie (szerokość ~375 px), bez poziomego przewijania
-- [ ] 4.9 Edytor podtematów nadal potwierdza usuwanie jak przed wyjęciem `Confirmation`
+- [x] 4.3 Na podglądzie z prawdziwym AI: quiz → „Wygeneruj fiszki” → 10 fiszek w podziale z reguły rozdziału; zanotuj `latency_ms` i `output_tokens` z `ai_calls` (próg: < 75 s, bez `ai_invalid_output` z powodu `max_tokens`)
+- [x] 4.4 Temat językowy: fiszki słownikowe mają słowo, 4 tłumaczenia, przykładowe zdanie; pojęciowe — pytanie na 2–3 zdania
+- [x] 4.5 „Czytaj więcej” rozwija wyjaśnienie bez żadnego żądania sieciowego
+- [x] 4.6 Przeładowanie strony w trakcie generowania kończy się pokazaniem partii po odpytywaniu, a `remaining` spada o 1
+- [x] 4.7 Usunięcie fiszki po potwierdzeniu znika ją także po przeładowaniu; anulowanie nic nie zmienia
+- [x] 4.8 Strona fiszek używalna na telefonie (szerokość ~375 px), bez poziomego przewijania
+- [x] 4.9 Edytor podtematów nadal potwierdza usuwanie jak przed wyjęciem `Confirmation`
