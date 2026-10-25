@@ -322,15 +322,15 @@ Migracja tylko rozszerzająca (dwie nowe tabele, trzy funkcje); nie dotyka istni
 
 #### Automated
 
-- [x] 2.1 `npm test` przechodzi z nowym `flashcards-task.test.ts`
-- [x] 2.2 `npm run lint` przechodzi
-- [x] 2.3 `npm run build` przechodzi
+- [x] 2.1 `npm test` przechodzi z nowym `flashcards-task.test.ts` — 066a0e0
+- [x] 2.2 `npm run lint` przechodzi — 066a0e0
+- [x] 2.3 `npm run build` przechodzi — 066a0e0
 
 ### Phase 3: API
 
 #### Automated
 
-- [ ] 3.1 `npm test`, `npm run lint`, `npm run build` przechodzą
+- [x] 3.1 `npm test`, `npm run lint`, `npm run build` przechodzą
 - [ ] 3.2 CI `smoke` (z `smoke-topics.mjs`) przechodzi z nowymi krokami fiszek
 
 ### Phase 4: UI

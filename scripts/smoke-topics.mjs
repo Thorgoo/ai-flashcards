@@ -1,5 +1,6 @@
 // Smoke test of the topic flow as a signed-in user: create a topic, generate (AI_MODE=fake),
-// edit, regenerate, confirm, the lock, another account, and the daily generation limit
+// edit, regenerate, confirm, the lock, the quiz, the first flashcard batch, another account,
+// and the daily generation limit
 // against the real PostgREST. OAuth cannot run in CI, so test accounts are created with the
 // local Supabase admin API and signed in with a password; @supabase/ssr writes the session
 // cookies exactly as the app reads them.
@@ -18,6 +19,27 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
 
 const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const GENERATION_LIMIT = 20;
+const BATCH_SIZE = 10;
+
+// Copy of batchAllocation in src/lib/topics/flashcards-task.ts (node cannot import the TS
+// file); keep the two in step.
+function batchAllocation(percents) {
+  const count = percents.length;
+  const rest = BATCH_SIZE - count;
+  const weights = percents.map((percent) => 100 - Math.min(100, Math.max(0, percent)));
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  if (total === 0) {
+    return percents.map((_, i) => 1 + Math.floor(rest / count) + (i < rest % count ? 1 : 0));
+  }
+  const shares = weights.map((weight) => (rest * weight) / total);
+  const extra = shares.map(Math.floor);
+  const left = rest - extra.reduce((sum, value) => sum + value, 0);
+  const byRemainder = shares.map((_, i) => i).sort((a, b) => shares[b] - extra[b] - (shares[a] - extra[a]) || a - b);
+  for (const i of byRemainder.slice(0, left)) {
+    extra[i] += 1;
+  }
+  return extra.map((value) => value + 1);
+}
 
 async function signIn(email) {
   const password = randomUUID();
@@ -160,6 +182,7 @@ try {
 
   r = await api(`${topic}/confirm`, { cookie: a.cookie });
   check("confirm the list", r.status === 200 && r.json?.data?.topic?.status === "confirmed", describe(r));
+  const confirmed = r.json?.data?.subtopics ?? [];
 
   r = await api(`${topic}/subtopics`, { body: { name: "Po fakcie", contentType: "conceptual" }, cookie: a.cookie });
   check("a confirmed list cannot be extended", r.status === 409 && r.json?.error?.code === "topic_locked", describe(r));
@@ -195,6 +218,12 @@ try {
   );
   const firstQuestion = r.json?.data?.question?.id;
   let state = r;
+  r = await api(`${topic}/flashcards`, { cookie: a.cookie });
+  check(
+    "flashcards cannot be generated before the quiz is completed",
+    r.status === 409 && r.json?.error?.code === "quiz_not_completed",
+    describe(r),
+  );
   r = await api(`${topic}/quiz`, { method: "GET", cookie: a.cookie });
   check(
     "the quiz state is read back for the quiz page",
@@ -231,15 +260,53 @@ try {
   r = await api(`${topic}/quiz/answer`, { body: { questionId: firstQuestion, answer: 0 }, cookie: b.cookie });
   check("another account cannot answer the quiz", r.status === 404, describe(r));
 
-  // Three generations used so far (generate, regenerate, quiz); refused calls must not count.
+  // First flashcard batch (S-04), split by the quiz results the API returned.
+  const percentOf = new Map(results.map((row) => [row.subtopicId, row.percent]));
+  const expected = batchAllocation(confirmed.map((subtopic) => percentOf.get(subtopic.id) ?? 0));
+  r = await api(`${topic}/flashcards`, { cookie: a.cookie });
+  const cards = r.json?.data?.cards ?? [];
+  const perSubtopic = confirmed.map((subtopic) => cards.filter((card) => card.subtopicId === subtopic.id).length);
+  check(
+    "generate the first flashcard batch (fake AI) split by the quiz results",
+    r.status === 200 &&
+      r.headers.get("X-AI-Mode") === "fake" &&
+      r.json?.data?.batch?.status === "ready" &&
+      cards.length === BATCH_SIZE &&
+      confirmed.length > 0 &&
+      perSubtopic.every((count) => count >= 1) &&
+      JSON.stringify(perSubtopic) === JSON.stringify(expected) &&
+      r.json?.remaining === GENERATION_LIMIT - 4,
+    `${describe(r)}; expected ${JSON.stringify(expected)}, got ${JSON.stringify(perSubtopic)}`,
+  );
+  r = await api(`${topic}/flashcards`, { cookie: a.cookie });
+  check("a topic gets only one first batch", r.status === 409 && r.json?.error?.code === "batch_exists", describe(r));
+  const card = cards[0]?.id;
+  r = await api(`${topic}/flashcards/${card}`, { method: "DELETE", cookie: a.cookie });
+  check(
+    "delete a flashcard",
+    r.status === 200 &&
+      r.json?.data?.cards?.length === BATCH_SIZE - 1 &&
+      !r.json.data.cards.some((item) => item.id === card),
+    describe(r),
+  );
+  r = await api(`${topic}/flashcards/${card}`, { method: "DELETE", cookie: a.cookie });
+  check(
+    "a deleted flashcard is gone for good",
+    r.status === 404 && r.json?.error?.code === "flashcard_not_found",
+    describe(r),
+  );
+  r = await api(`${topic}/flashcards`, { method: "GET", cookie: b.cookie });
+  check("another account cannot read the flashcards", r.status === 404, describe(r));
+
+  // Four generations used so far (generate, regenerate, quiz, flashcards); refused calls must not count.
   const generations = [];
-  for (let i = 4; i <= GENERATION_LIMIT + 1; i++) {
+  for (let i = 5; i <= GENERATION_LIMIT + 1; i++) {
     generations.push(await api(`${draft}/generate`, { cookie: a.cookie }));
   }
   const lastAllowed = generations.at(-2);
   const refused = generations.at(-1);
   check(
-    `generations 4-${GENERATION_LIMIT} are allowed`,
+    `generations 5-${GENERATION_LIMIT} are allowed`,
     generations.slice(0, -1).every((res) => res.status === 200) && lastAllowed?.json?.remaining === 0,
     lastAllowed ? describe(lastAllowed) : "no results",
   );
