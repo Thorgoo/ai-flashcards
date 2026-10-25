@@ -42,7 +42,7 @@ export const POST: APIRoute = async (context) => {
 
   // A reload or a closed tab cancels the request; waitUntil lets the paid-for generation
   // finish and be saved, and the reloaded page polls GET until it is ready.
-  const work = generateFlashcards(session.supabase, session.user, found, quiz);
+  const work = generateFlashcards(session.supabase, session.user, found, quiz, claimed.value);
   // The adapter types cfContext as ExecutionContext, which this project's types do not
   // include; it is absent outside the Workers runtime.
   const cf = context.locals.cfContext as { waitUntil(promise: Promise<unknown>): void } | undefined;
@@ -55,6 +55,7 @@ async function generateFlashcards(
   user: User,
   found: TopicWithSubtopics,
   quiz: QuizState,
+  claimedAt: string,
 ): Promise<Response> {
   const { topic } = found;
   // Subtopics come in list order; one without a quiz result counts as 0%.
@@ -69,13 +70,14 @@ async function generateFlashcards(
   const ai = getAi(supabase, user);
   const result = await ai.call(buildFlashcardsRequest(topic, subtopics));
   if (!result.ok) {
-    await releaseFlashcardBatchClaim(supabase, topic.id);
+    await releaseFlashcardBatchClaim(supabase, topic.id, claimedAt);
     return aiResponse(result, ai.mode);
   }
 
-  const created = await createFlashcardBatch(supabase, topic.id, toFlashcardRows(result.data, subtopics));
+  const rows = toFlashcardRows(result.data, subtopics);
+  const created = await createFlashcardBatch(supabase, topic.id, rows, claimedAt);
   if (!created.ok) {
-    await releaseFlashcardBatchClaim(supabase, topic.id);
+    await releaseFlashcardBatchClaim(supabase, topic.id, claimedAt);
     return topicErrorResponse(created.code);
   }
 

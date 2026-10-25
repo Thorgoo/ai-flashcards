@@ -5,7 +5,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(38);
+select plan(41);
 
 insert into auth.users (id, email)
 values
@@ -181,13 +181,34 @@ update public.quizzes set claimed_at = now() - interval '2 minutes'
 where topic_id = '00000000-0000-0000-0000-0000000000a3';
 set local role authenticated;
 
+select is(
+  public.claim_quiz('00000000-0000-0000-0000-0000000000a3'),
+  now(),
+  'an abandoned claim (older than 90 s) is taken over and returns its token'
+);
+-- The abandoned request's token no longer matches (migration claim_tokens_and_option_nulls).
 select lives_ok(
-  $$ select public.claim_quiz('00000000-0000-0000-0000-0000000000a3') $$,
-  'an abandoned claim (older than 90 s) is taken over'
+  $$ select public.release_quiz_claim('00000000-0000-0000-0000-0000000000a3', now() - interval '2 minutes') $$,
+  'releasing with the abandoned token runs without error'
+);
+select throws_ok(
+  $$ select public.create_quiz(
+       '00000000-0000-0000-0000-0000000000a3', current_setting('test.questions_a3')::jsonb, now() - interval '2 minutes') $$,
+  'P0409',
+  'quiz_not_claimed',
+  'an abandoned token cannot fill the new claim'
+);
+select throws_ok(
+  $$ select public.create_quiz(
+       '00000000-0000-0000-0000-0000000000a3',
+       jsonb_set(current_setting('test.questions_a3')::jsonb, '{0,options,1}', 'null'), now()) $$,
+  '23514',
+  null,
+  'a question cannot have a null option'
 );
 select lives_ok(
-  $$ select public.create_quiz('00000000-0000-0000-0000-0000000000a3', current_setting('test.questions_a3')::jsonb) $$,
-  'create_quiz fills the claim'
+  $$ select public.create_quiz('00000000-0000-0000-0000-0000000000a3', current_setting('test.questions_a3')::jsonb, now()) $$,
+  'create_quiz fills the claim named by its token'
 );
 select results_eq(
   $$ select q.status, count(qq.id)
@@ -247,7 +268,7 @@ select is(
 reset role;
 
 select ok(
-  not has_function_privilege('anon', 'public.create_quiz(uuid, jsonb)', 'execute'),
+  not has_function_privilege('anon', 'public.create_quiz(uuid, jsonb, timestamptz)', 'execute'),
   'anon cannot execute create_quiz'
 );
 select ok(
@@ -263,7 +284,7 @@ select ok(
   'anon cannot execute claim_quiz'
 );
 select ok(
-  not has_function_privilege('anon', 'public.release_quiz_claim(uuid)', 'execute'),
+  not has_function_privilege('anon', 'public.release_quiz_claim(uuid, timestamptz)', 'execute'),
   'anon cannot execute release_quiz_claim'
 );
 

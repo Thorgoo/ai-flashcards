@@ -122,15 +122,23 @@ export async function getFlashcardState(supabase: SupabaseClient, topicId: strin
 }
 
 // Reserves the topic's first batch before the AI call: refuses a second batch and a
-// generation already running in another request (claim_flashcard_batch).
-export async function claimFlashcardBatch(supabase: SupabaseClient, topicId: string): Promise<RepoResult<null>> {
-  const { error } = await supabase.rpc("claim_flashcard_batch", { p_topic_id: topicId });
-  return error ? { ok: false, code: errorCode(error) } : { ok: true, value: null };
+// generation already running in another request (claim_flashcard_batch). The value is the
+// claim's token: release and create pass it back, so they never touch a taken-over claim.
+export async function claimFlashcardBatch(supabase: SupabaseClient, topicId: string): Promise<RepoResult<string>> {
+  const claim = await supabase.rpc("claim_flashcard_batch", { p_topic_id: topicId });
+  return claim.error ? { ok: false, code: errorCode(claim.error) } : { ok: true, value: claim.data as string };
 }
 
 // Drops an unfinished claim after a failed AI call or save, so the batch can start again.
-export async function releaseFlashcardBatchClaim(supabase: SupabaseClient, topicId: string): Promise<void> {
-  const { error } = await supabase.rpc("release_flashcard_batch_claim", { p_topic_id: topicId });
+export async function releaseFlashcardBatchClaim(
+  supabase: SupabaseClient,
+  topicId: string,
+  claimedAt: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("release_flashcard_batch_claim", {
+    p_topic_id: topicId,
+    p_claimed_at: claimedAt,
+  });
   if (error) {
     // The claim expires on its own (FLASHCARD_CLAIM_TTL_SECONDS); the original error matters more.
     // eslint-disable-next-line no-console
@@ -143,8 +151,13 @@ export async function createFlashcardBatch(
   supabase: SupabaseClient,
   topicId: string,
   rows: FlashcardRow[],
+  claimedAt: string,
 ): Promise<RepoResult<null>> {
-  const { error } = await supabase.rpc("create_flashcard_batch", { p_topic_id: topicId, p_cards: rows });
+  const { error } = await supabase.rpc("create_flashcard_batch", {
+    p_topic_id: topicId,
+    p_cards: rows,
+    p_claimed_at: claimedAt,
+  });
   return error ? { ok: false, code: errorCode(error) } : { ok: true, value: null };
 }
 
