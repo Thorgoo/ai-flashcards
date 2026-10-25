@@ -34,7 +34,7 @@ export const POST: APIRoute = async (context) => {
 
   // A reload or a closed tab cancels the request; waitUntil lets the paid-for generation
   // finish and be saved, and the reloaded page polls GET until it is ready.
-  const work = generateQuiz(session.supabase, session.user, found);
+  const work = generateQuiz(session.supabase, session.user, found, claimed.value);
   // The adapter types cfContext as ExecutionContext, which this project's types do not
   // include; it is absent outside the Workers runtime.
   const cf = context.locals.cfContext as { waitUntil(promise: Promise<unknown>): void } | undefined;
@@ -42,18 +42,23 @@ export const POST: APIRoute = async (context) => {
   return await work;
 };
 
-async function generateQuiz(supabase: SupabaseClient, user: User, found: TopicWithSubtopics): Promise<Response> {
+async function generateQuiz(
+  supabase: SupabaseClient,
+  user: User,
+  found: TopicWithSubtopics,
+  claimedAt: string,
+): Promise<Response> {
   const { topic, subtopics } = found;
   const ai = getAi(supabase, user);
   const result = await ai.call(buildQuizRequest(topic, subtopics));
   if (!result.ok) {
-    await releaseQuizClaim(supabase, topic.id);
+    await releaseQuizClaim(supabase, topic.id, claimedAt);
     return aiResponse(result, ai.mode);
   }
 
-  const created = await createQuiz(supabase, topic.id, toQuizRows(result.data, subtopics));
+  const created = await createQuiz(supabase, topic.id, toQuizRows(result.data, subtopics), claimedAt);
   if (!created.ok) {
-    await releaseQuizClaim(supabase, topic.id);
+    await releaseQuizClaim(supabase, topic.id, claimedAt);
     return topicErrorResponse(created.code);
   }
 

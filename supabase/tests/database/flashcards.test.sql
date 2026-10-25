@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(39);
+select plan(45);
 
 insert into auth.users (id, email)
 values
@@ -134,9 +134,10 @@ update public.flashcard_batches set claimed_at = now() - interval '121 seconds'
 where topic_id = '00000000-0000-0000-0000-0000000000a1';
 set local role authenticated;
 
-select lives_ok(
-  $$ select public.claim_flashcard_batch('00000000-0000-0000-0000-0000000000a1') $$,
-  'an abandoned claim (older than 120 s) is taken over'
+select is(
+  public.claim_flashcard_batch('00000000-0000-0000-0000-0000000000a1'),
+  now(),
+  'an abandoned claim (older than 120 s) is taken over and returns its token'
 );
 select is(
   (select claimed_at from public.flashcard_batches where topic_id = '00000000-0000-0000-0000-0000000000a1'),
@@ -144,7 +145,38 @@ select is(
   'taking over renews the claim'
 );
 
+-- The abandoned request's token no longer matches (migration claim_tokens_and_option_nulls).
+select lives_ok(
+  $$ select public.release_flashcard_batch_claim('00000000-0000-0000-0000-0000000000a1', now() - interval '121 seconds') $$,
+  'releasing with the abandoned token runs without error'
+);
+select is((select count(*) from public.flashcard_batches), 1::bigint, 'an abandoned token does not release the new claim');
+select throws_ok(
+  $$ select public.create_flashcard_batch(
+       '00000000-0000-0000-0000-0000000000a1', current_setting('test.cards')::jsonb, now() - interval '121 seconds') $$,
+  'P0409',
+  'batch_not_claimed',
+  'an abandoned token cannot fill the new claim'
+);
+
+-- Another account cannot release A's claim.
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
+select lives_ok(
+  $$ select public.release_flashcard_batch_claim('00000000-0000-0000-0000-0000000000a1') $$,
+  'another account''s release runs without error'
+);
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
+select is((select count(*) from public.flashcard_batches), 1::bigint, 'another account does not release A''s claim');
+
 -- Refused saves.
+select throws_ok(
+  $$ select public.create_flashcard_batch(
+       '00000000-0000-0000-0000-0000000000a1',
+       jsonb_set(current_setting('test.cards')::jsonb, '{0,options,1}', 'null')) $$,
+  '23514',
+  null,
+  'a card cannot have a null option'
+);
 select throws_ok(
   $$ select public.create_flashcard_batch('00000000-0000-0000-0000-0000000000a1', current_setting('test.cards')::jsonb - 9) $$,
   'P0422',
@@ -176,8 +208,8 @@ select results_eq(
 
 -- The batch.
 select lives_ok(
-  $$ select public.create_flashcard_batch('00000000-0000-0000-0000-0000000000a1', current_setting('test.cards')::jsonb) $$,
-  'create_flashcard_batch fills the claim'
+  $$ select public.create_flashcard_batch('00000000-0000-0000-0000-0000000000a1', current_setting('test.cards')::jsonb, now()) $$,
+  'create_flashcard_batch fills the claim named by its token'
 );
 select results_eq(
   $$ select b.status, count(f.id) from public.flashcard_batches b
@@ -279,11 +311,11 @@ select ok(
   'anon cannot execute claim_flashcard_batch'
 );
 select ok(
-  not has_function_privilege('anon', 'public.release_flashcard_batch_claim(uuid)', 'execute'),
+  not has_function_privilege('anon', 'public.release_flashcard_batch_claim(uuid, timestamptz)', 'execute'),
   'anon cannot execute release_flashcard_batch_claim'
 );
 select ok(
-  not has_function_privilege('anon', 'public.create_flashcard_batch(uuid, jsonb)', 'execute'),
+  not has_function_privilege('anon', 'public.create_flashcard_batch(uuid, jsonb, timestamptz)', 'execute'),
   'anon cannot execute create_flashcard_batch'
 );
 
