@@ -1,10 +1,10 @@
 ---
 change_id: first-weak-subtopic-batch
 title: Pierwsza partia fiszek ze słabych podtematów (S-04)
-status: impl_reviewed
+status: archived
 created: 2026-10-24
 updated: 2026-10-25
-archived_at: null
+archived_at: 2026-10-25T18:39:34Z
 ---
 
 ## Notes
