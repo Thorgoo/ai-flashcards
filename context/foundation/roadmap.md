@@ -3,7 +3,7 @@ project: AI Flashcards
 version: 1
 status: draft
 created: 2026-10-05
-updated: 2026-10-24
+updated: 2026-10-25
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -46,7 +46,7 @@ Osoba ucząca się zawodowo kilku tematów naraz zdobywa wiedzę ad-hoc (np. w r
 | S-01 | allowlisted-oauth-login         | user can zalogować się przez OAuth (tylko adresy z allowlisty) i wylogować; publiczna rejestracja znika                                   | —             | FR-001, FR-002                                                        | done        |
 | S-02 | topic-with-confirmed-subtopics  | user can utworzyć temat, poprawić wygenerowaną przez AI listę podtematów z typem treści i ją zatwierdzić                                  | S-01, F-02    | US-01, FR-003, FR-004, FR-005, FR-006, FR-028                         | done        |
 | S-03 | diagnostic-quiz-by-subtopic     | user can rozwiązać quiz diagnostyczny z opcją „nie wiem” i zobaczyć wynik per podtemat                                                    | S-02          | US-01, FR-008, FR-009, FR-010                                         | done        |
-| S-04 | first-weak-subtopic-batch       | user can dostać partię fiszek z najsłabszych podtematów, czytać „więcej” i usuwać złe fiszki                                              | S-03          | US-01, FR-011, FR-012, FR-013, FR-028                                 | in-progress |
+| S-04 | first-weak-subtopic-batch       | user can dostać partię fiszek z najsłabszych podtematów, czytać „więcej” i usuwać złe fiszki                                              | S-03          | US-01, FR-011, FR-012, FR-013, FR-028                                 | done        |
 | S-05 | multiple-choice-study-session   | user can uczyć się zaległych fiszek w formacie A/B/C/D z natychmiastowym sprawdzeniem i harmonogramem powrotów                            | S-04          | US-01, FR-014, FR-015                                                 | proposed    |
 | S-06 | ai-graded-open-answers          | user can odpowiadać otwarcie, dostać ocenę AI i opanować fiszkę po dwóch poprawnych odpowiedziach w różne dni                             | S-05          | US-01, FR-015, FR-016, FR-017, FR-018, FR-028                         | proposed    |
 | S-07 | next-batch-and-subtopic-mastery | user can zobaczyć opanowanie per podtemat i po 80% partii wygenerować kolejną ze słabych, nieopanowanych podtematów                       | S-06          | US-01, FR-019, FR-020                                                 | proposed    |
@@ -159,7 +159,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Gwiazda przewodnia — najcięższe generowanie (10 fiszek z wyjaśnieniami), więc najbardziej narażone na limity środowiska i zapis częściowy; zapis „wszystko albo nic” z F-02 musi tu zadziałać na pełnej skali.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-05: Sesja nauki w formacie A/B/C/D
 
@@ -285,3 +285,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **F-02: (foundation) jest jedna ścieżka wywołania AI, która waliduje kształt odpowiedzi, odrzuca niepoprawny wynik z czytelnym błędem i możliwością ponowienia, liczy osobne dzienne limity per konto (20 generowań / 100 ocen) i w testach może zostać zastąpiona podstawionymi odpowiedziami; konkretne prompty powstają w wycinkach.** — Archived 2026-10-21 → `context/archive/2026-10-18-ai-call-guardrails/`. Lesson: —.
 - **S-02: user can utworzyć temat (z opcjonalną notatką o zakresie/poziomie), zobaczyć wygenerowaną przez AI listę podtematów z rozpoznanym typem treści (pojęciowy / językowy), usunąć, zmienić nazwę, dodać podtemat, poprawić typ lub wygenerować listę ponownie, zatwierdzić ją oraz wybrać istniejący temat z listy.** — Archived 2026-10-22 → `context/archive/2026-10-22-topic-with-confirmed-subtopics/`. Lesson: —.
 - **S-03: user can rozwiązać wygenerowany przez AI 10-pytaniowy quiz (A/B/C/D + „nie wiem”), po którego rozpoczęciu podtematy są zablokowane, i zobaczyć wynik z podziałem na podtematy.** — Archived 2026-10-24 → `context/archive/2026-10-22-diagnostic-quiz-by-subtopic/`. Lesson: —.
+- **S-04: user can dostać partię 10 fiszek wygenerowanych z najsłabszych podtematów (podtemat ze 100% w quizie też dostaje mniejszą partię), w kształcie zależnym od typu treści, z rozszerzonym wyjaśnieniem pod „czytaj więcej” zapisanym razem z fiszką, przejrzeć je i usunąć niechciane.** — Archived 2026-10-25 → `context/archive/2026-10-24-first-weak-subtopic-batch/`. Lesson: —.
