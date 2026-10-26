@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(34);
+select plan(40);
 
 -- Two accounts (email sign-up is disabled, so users are inserted directly).
 insert into auth.users (id, email)
@@ -82,6 +82,14 @@ select public.create_flashcard_batch(
      'correct_index', 0, 'explanation', 'e' || i, 'example', null))
    from generate_series(0, 9) as i)
 );
+-- A wrong answer to one card: one log row, the card stays multiple-choice (writes go
+-- through answer_flashcard_choice only). The card id stays readable as account B.
+select set_config('test.a_card', (
+  select id::text from public.flashcards where topic_id = '00000000-0000-0000-0000-0000000000a3' and position = 0
+), true);
+select public.answer_flashcard_choice(
+  current_setting('test.a_card')::uuid, 1::smallint, '00000000-0000-0000-0000-000000000f01'
+);
 
 select is(
   (select user_id from public.isolation_probe),
@@ -155,6 +163,23 @@ select throws_ok(
   null,
   'account B cannot insert a flashcard owned by A'
 );
+select is((select count(*) from public.flashcard_answers), 0::bigint, 'account B sees none of A''s flashcard answers');
+select throws_ok($$ update public.flashcard_answers set correct = true $$, '42501', null, 'account B cannot edit flashcard answers directly');
+select throws_ok($$ delete from public.flashcard_answers $$, '42501', null, 'account B cannot delete flashcard answers directly');
+select throws_ok(
+  $$ insert into public.flashcard_answers (id, user_id, topic_id, flashcard_id, format, chosen_index, correct, answered_on)
+     values (gen_random_uuid(), '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000a3',
+             current_setting('test.a_card')::uuid, 'choice', 0, true, current_date) $$,
+  '42501',
+  null,
+  'account B cannot insert a flashcard answer owned by A'
+);
+select throws_ok(
+  $$ select public.answer_flashcard_choice(current_setting('test.a_card')::uuid, 0::smallint, gen_random_uuid()) $$,
+  'P0409',
+  'flashcard_not_found',
+  'account B cannot answer A''s flashcard'
+);
 select lives_ok(
   $$ update public.isolation_probe set note = 'b-was-here' $$,
   'account B update runs without error'
@@ -194,6 +219,11 @@ select results_eq(
      left join public.flashcards f on f.batch_id = b.id group by b.status $$,
   $$ values ('ready'::text, 10::bigint) $$,
   'account A flashcard batch and cards are unchanged after account B'
+);
+select results_eq(
+  $$ select a.correct, f.stage from public.flashcard_answers a join public.flashcards f on f.id = a.flashcard_id $$,
+  $$ values (false, 'choice'::text) $$,
+  'account A flashcard answer and study state are unchanged after account B'
 );
 
 -- Anonymous callers have no privileges on app tables at all (migration revoke_anon_default_privileges).
