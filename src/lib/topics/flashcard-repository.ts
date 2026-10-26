@@ -24,7 +24,10 @@ export interface FlashcardState {
   cards: FlashcardView[];
 }
 
-interface CardRow {
+// Shared with study-repository.ts, which reads the same cards for the study session.
+export const CARD_COLUMNS = "id, subtopic_id, position, front, answer, options, correct_index, explanation, example";
+
+export interface CardRow {
   id: string;
   subtopic_id: string;
   position: number;
@@ -36,11 +39,26 @@ interface CardRow {
   example: string | null;
 }
 
-interface SubtopicRow {
+export interface SubtopicRow {
   id: string;
   name: string;
   content_type: ContentType;
   position: number;
+}
+
+export function toFlashcardView(card: CardRow, subtopic: SubtopicRow | undefined): FlashcardView {
+  return {
+    id: card.id,
+    subtopicId: card.subtopic_id,
+    subtopicName: subtopic?.name ?? "",
+    contentType: subtopic?.content_type ?? "conceptual",
+    front: card.front,
+    answer: card.answer,
+    options: card.options,
+    correctIndex: card.correct_index,
+    explanation: card.explanation,
+    example: card.example,
+  };
 }
 
 const P0409_REASONS: TopicErrorCode[] = [
@@ -82,10 +100,7 @@ export async function getFlashcardState(supabase: SupabaseClient, topicId: strin
   }
 
   const [cardsResult, subtopicsResult] = await Promise.all([
-    supabase
-      .from("flashcards")
-      .select("id, subtopic_id, position, front, answer, options, correct_index, explanation, example")
-      .eq("batch_id", batch.id),
+    supabase.from("flashcards").select(CARD_COLUMNS).eq("batch_id", batch.id),
     supabase.from("subtopics").select("id, name, content_type, position").eq("topic_id", topicId),
   ]);
   if (cardsResult.error) {
@@ -103,21 +118,7 @@ export async function getFlashcardState(supabase: SupabaseClient, topicId: strin
   );
   return {
     batch: { id: batch.id, status: "ready" },
-    cards: cards.map((card) => {
-      const subtopic = subtopics.get(card.subtopic_id);
-      return {
-        id: card.id,
-        subtopicId: card.subtopic_id,
-        subtopicName: subtopic?.name ?? "",
-        contentType: subtopic?.content_type ?? "conceptual",
-        front: card.front,
-        answer: card.answer,
-        options: card.options,
-        correctIndex: card.correct_index,
-        explanation: card.explanation,
-        example: card.example,
-      };
-    }),
+    cards: cards.map((card) => toFlashcardView(card, subtopics.get(card.subtopic_id))),
   };
 }
 

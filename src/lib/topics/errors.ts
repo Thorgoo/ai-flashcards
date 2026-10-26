@@ -13,6 +13,7 @@ export type TopicErrorCode =
   | "batch_exists"
   | "batch_generating"
   | "flashcard_not_found"
+  | "card_not_due"
   | "save_failed";
 
 // Same shape as AiError (src/lib/ai/errors.ts), so the client handles one error format.
@@ -35,6 +36,7 @@ const errors: Record<TopicErrorCode, { message: string; retryable: boolean; stat
   batch_exists: { message: "Ten temat ma już pierwszą partię fiszek.", retryable: false, status: 409 },
   batch_generating: { message: "Fiszki są właśnie przygotowywane.", retryable: false, status: 409 },
   flashcard_not_found: { message: "Nie znaleziono fiszki.", retryable: false, status: 404 },
+  card_not_due: { message: "Ta fiszka nie czeka już na powtórkę.", retryable: false, status: 409 },
   save_failed: { message: "Nie udało się zapisać zmian. Spróbuj ponownie.", retryable: true, status: 500 },
 };
 

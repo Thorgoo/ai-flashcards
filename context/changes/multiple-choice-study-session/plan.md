@@ -267,27 +267,27 @@ Migracja tylko rozszerza: nowe kolumny z wartościami domyślnymi i nowa tabela.
 
 #### Automated
 
-- [ ] 1.1 Migracja i testy bazy przechodzą w CI (`smoke` → `Database tests`: `npm run db:reset && npm run db:test`)
-- [ ] 1.2 `flashcard_study.test.sql` pokrywa przejścia, idempotencję, `card_not_due`, `flashcard_not_found` i `on delete set null`
-- [ ] 1.3 `account_isolation.test.sql` i `rls_guard.test.sql` obejmują `flashcard_answers` i przechodzą
-- [x] 1.4 Lint przechodzi: `npm run lint`
+- [x] 1.1 Migracja i testy bazy przechodzą w CI (`smoke` → `Database tests`: `npm run db:reset && npm run db:test`) — b2f0400
+- [x] 1.2 `flashcard_study.test.sql` pokrywa przejścia, idempotencję, `card_not_due`, `flashcard_not_found` i `on delete set null` — b2f0400
+- [x] 1.3 `account_isolation.test.sql` i `rls_guard.test.sql` obejmują `flashcard_answers` i przechodzą — b2f0400
+- [x] 1.4 Lint przechodzi: `npm run lint` — b2f0400
 
 #### Manual
 
-- [x] 1.5 Przegląd migracji: wyłącznie rozszerzająca (istniejące fiszki dostają `choice` i dzisiejsze `due_on`), brak `grant` dla `anon`/`public`
+- [x] 1.5 Przegląd migracji: wyłącznie rozszerzająca (istniejące fiszki dostają `choice` i dzisiejsze `due_on`), brak `grant` dla `anon`/`public` — b2f0400
 
 ### Phase 2: API sesji i kolejka
 
 #### Automated
 
-- [ ] 2.1 Testy jednostkowe przechodzą: `npm test` (`study-queue.test.ts`, `study-day.test.ts`)
-- [ ] 2.2 Kontrola typów i build przechodzą: `npm run build`
-- [ ] 2.3 Lint przechodzi: `npm run lint`
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (`study-queue.test.ts`, `study-day.test.ts`)
+- [x] 2.2 Kontrola typów i build przechodzą: `npm run build`
+- [x] 2.3 Lint przechodzi: `npm run lint`
 - [ ] 2.4 Rozszerzony `smoke-topics.mjs` przechodzi w CI
 
 #### Manual
 
-- [ ] 2.5 Na podglądzie gałęzi `curl`/DevTools: POST odpowiedzi wraca typowo < 300 ms, a ponowienie z tym samym `attemptId` nie dubluje wiersza w `flashcard_answers`
+- [x] 2.5 Na podglądzie gałęzi `curl`/DevTools: POST odpowiedzi wraca typowo < 300 ms, a ponowienie z tym samym `attemptId` nie dubluje wiersza w `flashcard_answers`
 
 ### Phase 3: UI nauki i wejścia
 

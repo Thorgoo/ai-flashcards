@@ -1,6 +1,6 @@
 // Smoke test of the topic flow as a signed-in user: create a topic, generate (AI_MODE=fake),
-// edit, regenerate, confirm, the lock, the quiz, the first flashcard batch, another account,
-// and the daily generation limit
+// edit, regenerate, confirm, the lock, the quiz, the first flashcard batch, the study session
+// (A/B/C/D answers), another account, and the daily generation limit
 // against the real PostgREST. OAuth cannot run in CI, so test accounts are created with the
 // local Supabase admin API and signed in with a password; @supabase/ssr writes the session
 // cookies exactly as the app reads them.
@@ -298,7 +298,98 @@ try {
   r = await api(`${topic}/flashcards`, { method: "GET", cookie: b.cookie });
   check("another account cannot read the flashcards", r.status === 404, describe(r));
 
-  // Four generations used so far (generate, regenerate, quiz, flashcards); refused calls must not count.
+  // Study session (S-05): A/B/C/D answers; it never calls AI.
+  const study = `${topic}/study`;
+  r = await api(study, { method: "GET", cookie: a.cookie });
+  const due = r.json?.data?.cards ?? [];
+  check(
+    "the study session lists the due cards without the deleted one",
+    r.status === 200 &&
+      due.length === BATCH_SIZE - 1 &&
+      !due.some((item) => item.id === card) &&
+      r.json?.data?.waitingOpen === 0 &&
+      typeof r.json?.data?.today === "string",
+    describe(r),
+  );
+  const studied = due[0];
+  const right = studied?.correctIndex;
+  const wrong = (right + 1) % 4;
+  const correctAttempt = randomUUID();
+  r = await api(`${study}/answer`, {
+    body: { cardId: studied?.id, answer: wrong, attemptId: randomUUID() },
+    cookie: a.cookie,
+  });
+  check(
+    "a wrong answer leaves the card due",
+    r.status === 200 && r.json?.data?.correct === false && r.json?.data?.stage === "choice",
+    describe(r),
+  );
+  r = await api(study, { method: "GET", cookie: a.cookie });
+  check(
+    "a card answered wrong is still in the session",
+    r.status === 200 && r.json?.data?.cards?.some((item) => item.id === studied?.id),
+    describe(r),
+  );
+  r = await api(`${study}/answer`, {
+    body: { cardId: studied?.id, answer: right, attemptId: correctAttempt },
+    cookie: a.cookie,
+  });
+  const firstResult = r.json?.data;
+  check(
+    "a correct answer moves the card to the open format",
+    r.status === 200 &&
+      firstResult?.correct === true &&
+      firstResult?.correctIndex === right &&
+      firstResult?.stage === "open",
+    describe(r),
+  );
+  r = await api(study, { method: "GET", cookie: a.cookie });
+  check(
+    "a card answered correctly leaves the session and waits for the open format",
+    r.status === 200 &&
+      !r.json?.data?.cards?.some((item) => item.id === studied?.id) &&
+      r.json?.data?.cards?.length === BATCH_SIZE - 2 &&
+      r.json?.data?.waitingOpen === 1,
+    describe(r),
+  );
+  r = await api(`${study}/answer`, {
+    body: { cardId: studied?.id, answer: right, attemptId: correctAttempt },
+    cookie: a.cookie,
+  });
+  const replay = r;
+  r = await api(study, { method: "GET", cookie: a.cookie });
+  check(
+    "a retried attempt returns the same result and changes nothing",
+    replay.status === 200 &&
+      JSON.stringify(replay.json?.data) === JSON.stringify(firstResult) &&
+      r.json?.data?.waitingOpen === 1,
+    `${describe(replay)}; ${describe(r)}`,
+  );
+  r = await api(`${study}/answer`, {
+    body: { cardId: studied?.id, answer: wrong, attemptId: randomUUID() },
+    cookie: a.cookie,
+  });
+  check(
+    "a card no longer due cannot be answered again",
+    r.status === 409 && r.json?.error?.code === "card_not_due",
+    describe(r),
+  );
+  r = await api(`${study}/answer`, { body: { cardId: card, answer: 0, attemptId: randomUUID() }, cookie: a.cookie });
+  check(
+    "a deleted card cannot be answered",
+    r.status === 404 && r.json?.error?.code === "flashcard_not_found",
+    describe(r),
+  );
+  r = await api(study, { method: "GET", cookie: b.cookie });
+  check("another account cannot read the study session", r.status === 404, describe(r));
+  r = await api(`${study}/answer`, {
+    body: { cardId: due[1]?.id, answer: 0, attemptId: randomUUID() },
+    cookie: b.cookie,
+  });
+  check("another account cannot answer in the study session", r.status === 404, describe(r));
+
+  // Four generations used so far (generate, regenerate, quiz, flashcards; the study session
+  // calls no AI); refused calls must not count.
   const generations = [];
   for (let i = 5; i <= GENERATION_LIMIT + 1; i++) {
     generations.push(await api(`${draft}/generate`, { cookie: a.cookie }));
