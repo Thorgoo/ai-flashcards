@@ -7,6 +7,7 @@ import { getFlashcardState } from "@/lib/topics/flashcard-repository";
 import { getQuizState, type QuizState } from "@/lib/topics/quiz-repository";
 import { getTopic } from "@/lib/topics/repository";
 import { isUuid } from "@/lib/topics/schemas";
+import { countDueCards } from "@/lib/topics/study-repository";
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 const id = Astro.params.id ?? "";
@@ -40,12 +41,24 @@ const quiz = quizState
   : null;
 // Same for flashcards: a failed read only shows "Wygeneruj fiszki"; the flashcards page reports it.
 let hasFlashcards = false;
+let study: { dueCount: number | null } | null = null;
 if (supabase && found && quiz?.completed) {
   try {
-    hasFlashcards = (await getFlashcardState(supabase, found.topic.id)) !== null;
+    const flashcards = await getFlashcardState(supabase, found.topic.id);
+    hasFlashcards = flashcards !== null;
+    if (flashcards?.batch.status === "ready") study = { dueCount: null };
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("[topics] reading flashcards failed", error);
+  }
+}
+// A failed count still shows "Ucz się", only without the number.
+if (supabase && found && study) {
+  try {
+    study.dueCount = await countDueCards(supabase, found.topic.id);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[topics] counting due flashcards failed", error);
   }
 }
 ---
@@ -61,6 +74,7 @@ if (supabase && found && quiz?.completed) {
           autoGenerate={autoGenerate}
           quiz={quiz}
           hasFlashcards={hasFlashcards}
+          study={study}
         />
       ) : (
         <div class="space-y-4">

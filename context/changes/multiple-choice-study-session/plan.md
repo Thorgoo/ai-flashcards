@@ -280,22 +280,22 @@ Migracja tylko rozszerza: nowe kolumny z wartościami domyślnymi i nowa tabela.
 
 #### Automated
 
-- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (`study-queue.test.ts`, `study-day.test.ts`)
-- [x] 2.2 Kontrola typów i build przechodzą: `npm run build`
-- [x] 2.3 Lint przechodzi: `npm run lint`
-- [ ] 2.4 Rozszerzony `smoke-topics.mjs` przechodzi w CI
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (`study-queue.test.ts`, `study-day.test.ts`) — 580a481
+- [x] 2.2 Kontrola typów i build przechodzą: `npm run build` — 580a481
+- [x] 2.3 Lint przechodzi: `npm run lint` — 580a481
+- [x] 2.4 Rozszerzony `smoke-topics.mjs` przechodzi w CI — 580a481
 
 #### Manual
 
-- [x] 2.5 Na podglądzie gałęzi `curl`/DevTools: POST odpowiedzi wraca typowo < 300 ms, a ponowienie z tym samym `attemptId` nie dubluje wiersza w `flashcard_answers`
+- [x] 2.5 Na podglądzie gałęzi `curl`/DevTools: POST odpowiedzi wraca typowo < 300 ms, a ponowienie z tym samym `attemptId` nie dubluje wiersza w `flashcard_answers` — 580a481
 
 ### Phase 3: UI nauki i wejścia
 
 #### Automated
 
-- [ ] 3.1 Build i typy przechodzą: `npm run build`
-- [ ] 3.2 Lint przechodzi: `npm run lint`
-- [ ] 3.3 Testy jednostkowe nadal przechodzą: `npm test`
+- [x] 3.1 Build i typy przechodzą: `npm run build`
+- [x] 3.2 Lint przechodzi: `npm run lint`
+- [x] 3.3 Testy jednostkowe nadal przechodzą: `npm test`
 
 #### Manual
 

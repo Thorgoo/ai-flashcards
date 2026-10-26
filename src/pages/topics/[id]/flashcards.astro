@@ -7,6 +7,7 @@ import { getFlashcardState, type FlashcardState } from "@/lib/topics/flashcard-r
 import { getQuizState } from "@/lib/topics/quiz-repository";
 import { getTopic } from "@/lib/topics/repository";
 import { isUuid } from "@/lib/topics/schemas";
+import { countDueCards } from "@/lib/topics/study-repository";
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 const id = Astro.params.id ?? "";
@@ -33,6 +34,16 @@ if (supabase && found && !blocked) {
     failed = true;
   }
 }
+// A failed count still shows "Ucz się", only without the number; the batch itself is fine.
+let dueCount: number | null = null;
+if (supabase && found && state?.batch.status === "ready") {
+  try {
+    dueCount = await countDueCards(supabase, found.topic.id);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[topics] counting due flashcards failed", error);
+  }
+}
 const autoStart = !blocked && !failed && state === null && Astro.url.searchParams.get("start") === "1";
 ---
 
@@ -56,6 +67,7 @@ const autoStart = !blocked && !failed && state === null && Astro.url.searchParam
           topicName={found.topic.name}
           initial={state}
           autoStart={autoStart}
+          dueCount={dueCount}
         />
       ) : (
         <div class="space-y-4">
