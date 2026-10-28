@@ -1,0 +1,74 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import StudySession from "@/components/topics/StudySession";
+import { createClient } from "@/lib/supabase";
+import { getFlashcardState } from "@/lib/topics/flashcard-repository";
+import { getQuizState } from "@/lib/topics/quiz-repository";
+import { getTopic } from "@/lib/topics/repository";
+import { isUuid } from "@/lib/topics/schemas";
+import { getStudySession, type StudySession as StudySessionState } from "@/lib/topics/study-repository";
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+const id = Astro.params.id ?? "";
+// Missing and other accounts' topics look the same: not found.
+const found = supabase && isUuid(id) ? await getTopic(supabase, id) : null;
+if (!found) {
+  Astro.response.status = 404;
+}
+// Study needs a ready batch: a draft topic or an unfinished quiz points back to the topic,
+// a topic without flashcards to generating them.
+let blocked: string | null = found && found.topic.status !== "confirmed" ? "Najpierw zatwierdź listę podtematów" : null;
+let noBatch = false;
+let session: StudySessionState | null = null;
+if (supabase && found && !blocked) {
+  try {
+    const quiz = await getQuizState(supabase, found.topic.id);
+    if (!quiz?.quiz.completedAt) {
+      blocked = "Najpierw ukończ quiz diagnostyczny";
+    } else if ((await getFlashcardState(supabase, found.topic.id))?.batch.status !== "ready") {
+      blocked = "Najpierw wygeneruj fiszki";
+      noBatch = true;
+    } else {
+      session = await getStudySession(supabase, found.topic.id);
+    }
+  } catch (error) {
+    // Neither blocked nor a session: the page reports the failed read.
+    // eslint-disable-next-line no-console
+    console.error("[topics] reading study session failed", error);
+  }
+}
+---
+
+<Layout title={found ? `Nauka: ${found.topic.name}` : "Nie znaleziono tematu"}>
+  <div class="dark bg-background text-foreground min-h-screen">
+    <main class="mx-auto max-w-2xl p-4">
+      <Topbar />
+      {found && session ? (
+        <StudySession client:load topicId={found.topic.id} topicName={found.topic.name} initial={session} />
+      ) : found ? (
+        <div class="space-y-4">
+          <h1 class="text-2xl font-semibold break-words">
+            {blocked ?? "Nie udało się wczytać fiszek. Odśwież stronę za chwilę."}
+          </h1>
+          {noBatch ? (
+            <a href={`/topics/${found.topic.id}/flashcards`} class="text-primary underline underline-offset-4">
+              Przejdź do fiszek
+            </a>
+          ) : (
+            <a href={`/topics/${found.topic.id}`} class="text-primary break-words underline underline-offset-4">
+              Wróć do tematu „{found.topic.name}”
+            </a>
+          )}
+        </div>
+      ) : (
+        <div class="space-y-4">
+          <h1 class="text-2xl font-semibold">Nie znaleziono tematu</h1>
+          <a href="/dashboard" class="text-primary underline underline-offset-4">
+            Wróć do listy tematów
+          </a>
+        </div>
+      )}
+    </main>
+  </div>
+</Layout>

@@ -10,3 +10,8 @@ export const TOPIC_STATUS_LABELS: Record<TopicStatus, string> = {
   draft: "Szkic",
   confirmed: "Zatwierdzony",
 };
+
+// The study entry button; a failed count (null) shows it without the number.
+export function studyLabel(dueCount: number | null): string {
+  return dueCount === null || dueCount === 0 ? "Ucz się" : `Ucz się (${dueCount})`;
+}

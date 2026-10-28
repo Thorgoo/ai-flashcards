@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
-import { ClipboardList, Layers, Lock, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { ClipboardList, GraduationCap, Layers, Lock, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { CONTENT_TYPES, SUBTOPIC_NAME_MAX, SUBTOPICS_MAX, SUBTOPICS_MIN, type Co
 import { callApi, type ApiError } from "./api";
 import { Confirmation, PORTAL_THEME } from "./Confirmation";
 import { GeneratingNotice } from "./GeneratingNotice";
-import { CONTENT_TYPE_LABELS, TOPIC_STATUS_LABELS } from "./labels";
+import { CONTENT_TYPE_LABELS, TOPIC_STATUS_LABELS, studyLabel } from "./labels";
 
 // Progress of the topic's quiz, for the entry button on a confirmed topic (null: no quiz yet).
 export interface QuizSummary {
@@ -26,11 +26,13 @@ interface Props {
   quiz: QuizSummary | null;
   // Whether the topic already has its first flashcard batch (ready or generating).
   hasFlashcards: boolean;
+  // The study entry once the batch is ready (null hides it); dueCount is null when counting failed.
+  study: { dueCount: number | null } | null;
 }
 
 type Busy = "generate" | "save" | null;
 
-export default function TopicEditor({ initial, autoGenerate, quiz, hasFlashcards }: Props) {
+export default function TopicEditor({ initial, autoGenerate, quiz, hasFlashcards, study }: Props) {
   const [state, setState] = useState(initial);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<{ error: ApiError; retry: () => void } | null>(null);
@@ -94,7 +96,13 @@ export default function TopicEditor({ initial, autoGenerate, quiz, hasFlashcards
       )}
 
       {!draft ? (
-        <ConfirmedList subtopics={subtopics} topicId={topic.id} quiz={quiz} hasFlashcards={hasFlashcards} />
+        <ConfirmedList
+          subtopics={subtopics}
+          topicId={topic.id}
+          quiz={quiz}
+          hasFlashcards={hasFlashcards}
+          study={study}
+        />
       ) : subtopics.length === 0 ? (
         busy !== "generate" && (
           <div className="border-border space-y-3 rounded-lg border p-6 text-center">
@@ -279,8 +287,9 @@ function ConfirmedList(props: {
   topicId: string;
   quiz: QuizSummary | null;
   hasFlashcards: boolean;
+  study: Props["study"];
 }) {
-  const { subtopics, quiz } = props;
+  const { subtopics, quiz, study } = props;
   const quizPath = `/topics/${props.topicId}/quiz`;
   const flashcardsPath = `/topics/${props.topicId}/flashcards`;
   return (
@@ -310,8 +319,16 @@ function ConfirmedList(props: {
                   : `Kontynuuj quiz (${quiz.answered}/${quiz.total})`}
           </a>
         </Button>
-        {quiz?.completed && (
+        {study && (
           <Button asChild>
+            <a href={`/topics/${props.topicId}/study`}>
+              <GraduationCap />
+              {studyLabel(study.dueCount)}
+            </a>
+          </Button>
+        )}
+        {quiz?.completed && (
+          <Button asChild variant={study ? "outline" : "default"}>
             <a href={props.hasFlashcards ? flashcardsPath : `${flashcardsPath}?start=1`}>
               <Layers />
               {props.hasFlashcards ? "Zobacz fiszki" : "Wygeneruj fiszki"}

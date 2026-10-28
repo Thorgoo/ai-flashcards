@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, ChevronDown, Layers, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, GraduationCap, Layers, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,15 @@ import type { FlashcardState, FlashcardView } from "@/lib/topics/flashcard-repos
 import { callApi, type ApiError } from "./api";
 import { Confirmation } from "./Confirmation";
 import { GeneratingNotice } from "./GeneratingNotice";
-import { CONTENT_TYPE_LABELS } from "./labels";
+import { CONTENT_TYPE_LABELS, studyLabel } from "./labels";
 
 interface Props {
   topicId: string;
   topicName: string;
   initial: FlashcardState | null;
   autoStart: boolean;
+  // Due cards counted by the page; null when counting failed or the batch was generated here.
+  dueCount: number | null;
 }
 
 type Busy = "generate" | "delete" | null;
@@ -22,7 +24,7 @@ type Busy = "generate" | "delete" | null;
 const LETTERS = ["A", "B", "C", "D"];
 const POLL_MS = 2000;
 
-export default function FlashcardBatch({ topicId, topicName, initial, autoStart }: Props) {
+export default function FlashcardBatch({ topicId, topicName, initial, autoStart, dueCount }: Props) {
   const [state, setState] = useState(initial);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<{ error: ApiError; retry: () => void } | null>(null);
@@ -146,6 +148,15 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart 
             </section>
           ))}
         </div>
+      )}
+
+      {!generating && state?.batch.status === "ready" && (
+        <Button asChild>
+          <a href={`/topics/${topicId}/study`}>
+            <GraduationCap />
+            {studyLabel(dueCount)}
+          </a>
+        </Button>
       )}
     </div>
   );

@@ -49,6 +49,14 @@ export const quizAnswerInput = z.object({
   answer: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal("dont_know")]),
 });
 
+// One A/B/C/D answer in the study session. attemptId is the client's id of the click,
+// reused on every retry so a repeated request is not counted twice (answer_flashcard_choice).
+export const studyAnswerInput = z.object({
+  cardId: z.string().refine(isUuid, { message: "cardId must be a uuid" }),
+  answer: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+  attemptId: z.string().refine(isUuid, { message: "attemptId must be a uuid" }),
+});
+
 export type CreateTopicInput = z.infer<typeof createTopicInput>;
 export type AddSubtopicInput = z.infer<typeof addSubtopicInput>;
 export type UpdateSubtopicInput = z.infer<typeof updateSubtopicInput>;

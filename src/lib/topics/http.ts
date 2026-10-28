@@ -6,6 +6,7 @@ import { topicErrorResponse } from "./errors";
 import { getFlashcardState, type FlashcardState } from "./flashcard-repository";
 import { getQuizState, type QuizState } from "./quiz-repository";
 import { getTopic, type TopicWithSubtopics } from "./repository";
+import { getStudySession, type StudySession } from "./study-repository";
 import { isUuid } from "./schemas";
 
 export interface Session {
@@ -78,6 +79,17 @@ export async function readFlashcardState(
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("[topics] reading flashcards failed", error);
+    return topicErrorResponse("save_failed");
+  }
+}
+
+// The topic's study session, or the error response if reading fails.
+export async function readStudySession(supabase: SupabaseClient, topicId: string): Promise<StudySession | Response> {
+  try {
+    return await getStudySession(supabase, topicId);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[topics] reading study session failed", error);
     return topicErrorResponse("save_failed");
   }
 }
