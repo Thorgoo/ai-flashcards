@@ -30,10 +30,11 @@ interface Attempt {
 const LETTERS = ["A", "B", "C", "D"];
 
 export default function StudySession({ topicId, topicName, initial }: Props) {
-  const [cards] = useState(() => new Map(initial.cards.map((card) => [card.id, card])));
-  const [queue, setQueue] = useState<StudyQueue>(() => createQueue(initial.cards.map((card) => card.id)));
+  // Open-format cards are left out until the open-answer UI lands (S-06, phase 3).
+  const [choiceCards] = useState(() => initial.cards.filter((card) => card.stage === "choice"));
+  const [cards] = useState(() => new Map(choiceCards.map((card) => [card.id, card])));
+  const [queue, setQueue] = useState<StudyQueue>(() => createQueue(choiceCards.map((card) => card.id)));
   const [attempt, setAttempt] = useState<Attempt | null>(null);
-  const [waitingOpen, setWaitingOpen] = useState(initial.waitingOpen);
   const [finished, setFinished] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   // Bumped on every move to another card; the effect below moves the focus there.
@@ -51,6 +52,7 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
   async function save(next: Attempt) {
     setAttempt({ ...next, error: null });
     const result = await callApi<ChoiceResult>(`/api/topics/${topicId}/study/answer`, "POST", {
+      format: "choice",
       cardId: next.cardId,
       answer: next.choice,
       attemptId: next.attemptId,
@@ -84,10 +86,7 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
     if (!attempt?.saved) return;
     const { correct } = attempt.saved;
     setQueue((value) => answered(value, correct));
-    if (correct) {
-      setFinished((value) => value + 1);
-      setWaitingOpen((value) => value + 1);
-    }
+    if (correct) setFinished((value) => value + 1);
     setAttempt(null);
     setStep((value) => value + 1);
   }
@@ -122,7 +121,6 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
             Na dziś wszystko
           </h1>
           <p>{finished === 0 ? "Nie masz dziś fiszek do powtórki." : `Przerobione fiszki: ${finished}`}</p>
-          <p className="text-muted-foreground text-sm">Fiszki czekające na format otwarty: {waitingOpen}</p>
           <Button asChild variant="outline">
             <a href={`/topics/${topicId}`}>Wróć do tematu</a>
           </Button>

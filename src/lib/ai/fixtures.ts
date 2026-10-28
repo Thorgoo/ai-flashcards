@@ -1,4 +1,5 @@
 import { FLASHCARDS_TASK } from "@/lib/topics/flashcards-task";
+import { GRADING_TASK } from "@/lib/topics/grading-task";
 import { QUIZ_TASK } from "@/lib/topics/quiz-task";
 import { SUBTOPICS_TASK } from "@/lib/topics/subtopics-task";
 import type { FakeFixture } from "./fake";
@@ -58,10 +59,24 @@ const flashcards: FakeFixture = (request) => {
   };
 };
 
+// The verdict comes from the user's answer in the prompt's <odpowiedz_uzytkownika> tag: it
+// is correct when it contains the word "poprawnie", so smoke and dev can reach both paths.
+const grading: FakeFixture = (request) => {
+  const answer = /<odpowiedz_uzytkownika>([\s\S]*?)<\/odpowiedz_uzytkownika>/.exec(request.prompt)?.[1] ?? "";
+  const correct = /poprawnie/i.test(answer);
+  return {
+    correct,
+    feedback: correct
+      ? "Trafnie oddajesz sedno wzorcowej odpowiedzi."
+      : "Zabrakło sedna wzorcowej odpowiedzi — przeczytaj ją poniżej.",
+  };
+};
+
 // Canned responses for AI_MODE=fake, one entry per task (the `task` passed to callAi).
 // Each slice that adds an AI task adds its fixture here.
 export const fakeFixtures: Record<string, FakeFixture> = {
   [SUBTOPICS_TASK]: subtopics,
   [QUIZ_TASK]: quiz,
   [FLASHCARDS_TASK]: flashcards,
+  [GRADING_TASK]: grading,
 };

@@ -278,14 +278,14 @@ Migracja wyłącznie rozszerzająca: nowe kolumny nullable z checkami spełniany
 
 #### Automated
 
-- [ ] 1.1 Migracja i testy bazy przechodzą w CI (`smoke` → `Database tests`)
-- [ ] 1.2 `flashcard_open.test.sql` pokrywa wszystkie przejścia, opanowanie, replay, `card_not_due`, `attempt_conflict`, `validation_failed` i checki dziennika
-- [ ] 1.3 `account_isolation.test.sql` obejmuje `answer_flashcard_open` i nowe kolumny
-- [ ] 1.4 Lint przechodzi: `npm run lint`
+- [x] 1.1 Migracja i testy bazy przechodzą w CI (`smoke` → `Database tests`) — ff8ec71
+- [x] 1.2 `flashcard_open.test.sql` pokrywa wszystkie przejścia, opanowanie, replay, `card_not_due`, `attempt_conflict`, `validation_failed` i checki dziennika — ff8ec71
+- [x] 1.3 `account_isolation.test.sql` obejmuje `answer_flashcard_open` i nowe kolumny — ff8ec71
+- [x] 1.4 Lint przechodzi: `npm run lint` — ff8ec71
 
 #### Manual
 
-- [ ] 1.5 Przegląd migracji: wyłącznie rozszerzająca, brak `grant` dla `anon`/`public`, komentarz o zaufaniu do werdyktu obecny
+- [x] 1.5 Przegląd migracji: wyłącznie rozszerzająca, brak `grant` dla `anon`/`public`, komentarz o zaufaniu do werdyktu obecny — ff8ec71
 
 ### Phase 2: Zadanie oceny i API
 
