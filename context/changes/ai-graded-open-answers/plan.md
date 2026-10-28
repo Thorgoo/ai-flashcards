@@ -291,10 +291,10 @@ Migracja wyłącznie rozszerzająca: nowe kolumny nullable z checkami spełniany
 
 #### Automated
 
-- [ ] 2.1 Testy jednostkowe przechodzą: `npm test` (`grading-task.test.ts`, `schemas.test.ts`)
-- [ ] 2.2 Kontrola typów i build przechodzą: `npm run build`
-- [ ] 2.3 Lint przechodzi: `npm run lint`
-- [ ] 2.4 Rozszerzony `smoke-topics.mjs` przechodzi w CI
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (`grading-task.test.ts`, `schemas.test.ts`) — d444d47
+- [x] 2.2 Kontrola typów i build przechodzą: `npm run build` — d444d47
+- [x] 2.3 Lint przechodzi: `npm run lint` — d444d47
+- [x] 2.4 Rozszerzony `smoke-topics.mjs` przechodzi w CI — d444d47
 
 #### Manual
 
