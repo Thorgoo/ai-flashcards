@@ -1,9 +1,9 @@
 ---
 change_id: multiple-choice-study-session
 title: Multiple choice study session
-status: implementing
+status: implemented
 created: 2026-10-25
-updated: 2026-10-26
+updated: 2026-10-28
 archived_at: null
 ---
 

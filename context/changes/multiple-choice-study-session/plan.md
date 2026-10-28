@@ -293,14 +293,14 @@ Migracja tylko rozszerza: nowe kolumny z wartościami domyślnymi i nowa tabela.
 
 #### Automated
 
-- [x] 3.1 Build i typy przechodzą: `npm run build`
-- [x] 3.2 Lint przechodzi: `npm run lint`
-- [x] 3.3 Testy jednostkowe nadal przechodzą: `npm test`
+- [x] 3.1 Build i typy przechodzą: `npm run build` — f2eefca
+- [x] 3.2 Lint przechodzi: `npm run lint` — f2eefca
+- [x] 3.3 Testy jednostkowe nadal przechodzą: `npm test` — f2eefca
 
 #### Manual
 
-- [ ] 3.4 Na telefonie (podgląd gałęzi): cała sesja do ekranu końcowego bez poziomego przewijania, przyciski wygodne kciukiem, wynik widoczny od razu po dotknięciu
-- [ ] 3.5 Błędna fiszka wraca na koniec kolejki; po poprawnej odpowiedzi znika i zwiększa licznik „czeka na format otwarty”
-- [ ] 3.6 Tryb samolotowy w trakcie zapisu: komunikat z ponowieniem, po powrocie sieci „Spróbuj ponownie” zapisuje bez duplikatu
-- [ ] 3.7 Przycisk „Ucz się (N)” na stronie tematu i fiszek pokazuje poprawne N i prowadzi do sesji
-- [ ] 3.8 Ponowne wejście tego samego dnia po ukończeniu sesji pokazuje „Na dziś wszystko”
+- [x] 3.4 Na telefonie (podgląd gałęzi): cała sesja do ekranu końcowego bez poziomego przewijania, przyciski wygodne kciukiem, wynik widoczny od razu po dotknięciu — f2eefca
+- [x] 3.5 Błędna fiszka wraca na koniec kolejki; po poprawnej odpowiedzi znika i zwiększa licznik „czeka na format otwarty” — f2eefca
+- [x] 3.6 Tryb samolotowy w trakcie zapisu: komunikat z ponowieniem, po powrocie sieci „Spróbuj ponownie” zapisuje bez duplikatu — f2eefca
+- [x] 3.7 Przycisk „Ucz się (N)” na stronie tematu i fiszek pokazuje poprawne N i prowadzi do sesji — f2eefca
+- [x] 3.8 Ponowne wejście tego samego dnia po ukończeniu sesji pokazuje „Na dziś wszystko” — f2eefca
