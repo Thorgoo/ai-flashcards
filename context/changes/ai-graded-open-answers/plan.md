@@ -304,9 +304,9 @@ Migracja wyłącznie rozszerzająca: nowe kolumny nullable z checkami spełniany
 
 #### Automated
 
-- [ ] 3.1 Build i typy przechodzą: `npm run build`
-- [ ] 3.2 Lint przechodzi: `npm run lint`
-- [ ] 3.3 Testy jednostkowe nadal przechodzą: `npm test`
+- [x] 3.1 Build i typy przechodzą: `npm run build` — 8436110
+- [x] 3.2 Lint przechodzi: `npm run lint` — 8436110
+- [x] 3.3 Testy jednostkowe nadal przechodzą: `npm test` — 8436110
 
 #### Manual
 
