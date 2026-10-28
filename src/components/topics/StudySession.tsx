@@ -92,6 +92,14 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
     setStep((value) => value + 1);
   }
 
+  // A save that cannot be retried: leave the card for now; it stays due for the next session.
+  function skip() {
+    if (!attempt) return;
+    setQueue((value) => drop(value, attempt.cardId));
+    setAttempt(null);
+    setStep((value) => value + 1);
+  }
+
   return (
     <div className="space-y-4">
       <a
@@ -130,6 +138,7 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
           onRetry={() => {
             if (attempt) void save(attempt);
           }}
+          onSkip={skip}
           onNext={next}
         />
       )}
@@ -144,6 +153,7 @@ function StudyCard({
   frontRef,
   onChoose,
   onRetry,
+  onSkip,
   onNext,
 }: {
   card: FlashcardView;
@@ -152,6 +162,7 @@ function StudyCard({
   frontRef: Ref<HTMLHeadingElement>;
   onChoose: (choice: number) => void;
   onRetry: () => void;
+  onSkip: () => void;
   onNext: () => void;
 }) {
   // The result shows at once from the card; once saved, the server's correctIndex wins.
@@ -225,9 +236,17 @@ function StudyCard({
         <Alert variant="destructive">
           <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
             <span>{attempt.error.message}</span>
-            {attempt.error.retryable && (
+            {attempt.error.retryable ? (
               <Button size="sm" variant="outline" onClick={onRetry}>
                 Spróbuj ponownie
+              </Button>
+            ) : attempt.error.code === "unauthenticated" ? (
+              <Button size="sm" variant="outline" asChild>
+                <a href="/auth/signin">Zaloguj się</a>
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={onSkip}>
+                Pomiń
               </Button>
             )}
           </AlertDescription>

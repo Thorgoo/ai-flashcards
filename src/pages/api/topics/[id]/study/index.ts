@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { loadTopic, readStudySession, requireSession } from "@/lib/topics/http";
 
 // The cards due today in the multiple-choice format; the client keeps the session's queue.
+// Unlike the page, no topic/quiz/batch preconditions: without a ready batch the queue is empty.
 export const GET: APIRoute = async (context) => {
   const session = requireSession(context);
   if (session instanceof Response) return session;
