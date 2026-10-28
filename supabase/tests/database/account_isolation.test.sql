@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(40);
+select plan(42);
 
 -- Two accounts (email sign-up is disabled, so users are inserted directly).
 insert into auth.users (id, email)
@@ -89,6 +89,23 @@ select set_config('test.a_card', (
 ), true);
 select public.answer_flashcard_choice(
   current_setting('test.a_card')::uuid, 1::smallint, '00000000-0000-0000-0000-000000000f01'
+);
+-- A second card moves to the open format and, the next day, gets a wrong open answer
+-- (writes go through answer_flashcard_open only). Days pass by moving due_on as the owner.
+select set_config('test.a_open_card', (
+  select id::text from public.flashcards where topic_id = '00000000-0000-0000-0000-0000000000a3' and position = 1
+), true);
+select public.answer_flashcard_choice(
+  current_setting('test.a_open_card')::uuid, 0::smallint, '00000000-0000-0000-0000-000000000f02'
+);
+reset role;
+update public.flashcards
+set due_on = (now() at time zone 'Europe/Warsaw')::date
+where id = current_setting('test.a_open_card')::uuid;
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
+select public.answer_flashcard_open(
+  current_setting('test.a_open_card')::uuid, '00000000-0000-0000-0000-000000000f03', 'a-open-answer', false, 'a-feedback'
 );
 
 select is(
@@ -180,6 +197,17 @@ select throws_ok(
   'flashcard_not_found',
   'account B cannot answer A''s flashcard'
 );
+select is(
+  (select count(*) from public.flashcard_answers where answer_text is not null or feedback is not null),
+  0::bigint,
+  'account B sees none of A''s open answer texts or feedback'
+);
+select throws_ok(
+  $$ select public.answer_flashcard_open(current_setting('test.a_open_card')::uuid, gen_random_uuid(), 'b-answer', true, 'b-feedback') $$,
+  'P0409',
+  'flashcard_not_found',
+  'account B cannot answer A''s open flashcard'
+);
 select lives_ok(
   $$ update public.isolation_probe set note = 'b-was-here' $$,
   'account B update runs without error'
@@ -221,9 +249,12 @@ select results_eq(
   'account A flashcard batch and cards are unchanged after account B'
 );
 select results_eq(
-  $$ select a.correct, f.stage from public.flashcard_answers a join public.flashcards f on f.id = a.flashcard_id $$,
-  $$ values (false, 'choice'::text) $$,
-  'account A flashcard answer and study state are unchanged after account B'
+  $$ select a.format, a.correct, a.answer_text, f.stage, f.open_streak::integer
+     from public.flashcard_answers a join public.flashcards f on f.id = a.flashcard_id order by a.id $$,
+  $$ values ('choice'::text, false, null::text, 'choice'::text, 0),
+            ('choice'::text, true, null::text, 'open'::text, 0),
+            ('open'::text, false, 'a-open-answer'::text, 'open'::text, 0) $$,
+  'account A flashcard answers and study state are unchanged after account B'
 );
 
 -- Anonymous callers have no privileges on app tables at all (migration revoke_anon_default_privileges).
