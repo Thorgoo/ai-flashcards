@@ -41,13 +41,38 @@ describe("studyAnswerInput", () => {
   const attemptId = "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b";
 
   it("accepts an option 0-3 with uuids", () => {
-    expect(studyAnswerInput.safeParse({ cardId, answer: 3, attemptId }).success).toBe(true);
+    expect(studyAnswerInput.safeParse({ format: "choice", cardId, answer: 3, attemptId }).success).toBe(true);
   });
 
   it("rejects other answers, a missing attempt id and malformed ids", () => {
-    expect(studyAnswerInput.safeParse({ cardId, answer: 4, attemptId }).success).toBe(false);
-    expect(studyAnswerInput.safeParse({ cardId, answer: "dont_know", attemptId }).success).toBe(false);
-    expect(studyAnswerInput.safeParse({ cardId, answer: 0 }).success).toBe(false);
-    expect(studyAnswerInput.safeParse({ cardId: "x", answer: 0, attemptId }).success).toBe(false);
+    const choice = { format: "choice", cardId, attemptId };
+    expect(studyAnswerInput.safeParse({ ...choice, answer: 4 }).success).toBe(false);
+    expect(studyAnswerInput.safeParse({ ...choice, answer: "dont_know" }).success).toBe(false);
+    expect(studyAnswerInput.safeParse({ format: "choice", cardId, answer: 0 }).success).toBe(false);
+    expect(studyAnswerInput.safeParse({ ...choice, cardId: "x", answer: 0 }).success).toBe(false);
+  });
+
+  it("needs the format", () => {
+    expect(studyAnswerInput.safeParse({ cardId, answer: 0, attemptId }).success).toBe(false);
+    expect(studyAnswerInput.safeParse({ cardId, answerText: "Odpowiedź", attemptId }).success).toBe(false);
+  });
+
+  it("accepts an open answer of 1-2000 characters, trimmed", () => {
+    const open = { format: "open", cardId, attemptId };
+    expect(studyAnswerInput.parse({ ...open, answerText: "  Pod to grupa kontenerów.  " })).toEqual({
+      ...open,
+      answerText: "Pod to grupa kontenerów.",
+    });
+    expect(studyAnswerInput.safeParse({ ...open, answerText: "x".repeat(2000) }).success).toBe(true);
+  });
+
+  it("rejects an empty or too long open answer and fields of the other format", () => {
+    const open = { format: "open", cardId, attemptId };
+    expect(studyAnswerInput.safeParse({ ...open, answerText: "   " }).success).toBe(false);
+    expect(studyAnswerInput.safeParse({ ...open, answerText: "x".repeat(2001) }).success).toBe(false);
+    expect(studyAnswerInput.safeParse({ ...open, answer: 0 }).success).toBe(false);
+    expect(
+      studyAnswerInput.safeParse({ format: "choice", cardId, answer: 0, answerText: "Odpowiedź", attemptId }).success,
+    ).toBe(false);
   });
 });

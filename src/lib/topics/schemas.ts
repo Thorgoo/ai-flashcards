@@ -49,13 +49,32 @@ export const quizAnswerInput = z.object({
   answer: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal("dont_know")]),
 });
 
-// One A/B/C/D answer in the study session. attemptId is the client's id of the click,
-// reused on every retry so a repeated request is not counted twice (answer_flashcard_choice).
-export const studyAnswerInput = z.object({
-  cardId: z.string().refine(isUuid, { message: "cardId must be a uuid" }),
-  answer: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
-  attemptId: z.string().refine(isUuid, { message: "attemptId must be a uuid" }),
-});
+// Matches the answer_text check in the flashcard_open_answers migration.
+export const OPEN_ANSWER_MAX = 2000;
+
+const uuidField = (name: string) => z.string().refine(isUuid, { message: `${name} must be a uuid` });
+
+// One answer in the study session: A/B/C/D (`choice`) or the user's own words (`open`).
+// attemptId is the client's id of the click, reused on every retry so a repeated request
+// is not counted twice. Strict, so a field of the other format is refused, not dropped.
+export const studyAnswerInput = z.discriminatedUnion("format", [
+  z
+    .object({
+      format: z.literal("choice"),
+      cardId: uuidField("cardId"),
+      answer: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+      attemptId: uuidField("attemptId"),
+    })
+    .strict(),
+  z
+    .object({
+      format: z.literal("open"),
+      cardId: uuidField("cardId"),
+      answerText: z.string().trim().min(1).max(OPEN_ANSWER_MAX),
+      attemptId: uuidField("attemptId"),
+    })
+    .strict(),
+]);
 
 export type CreateTopicInput = z.infer<typeof createTopicInput>;
 export type AddSubtopicInput = z.infer<typeof addSubtopicInput>;

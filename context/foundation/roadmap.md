@@ -48,7 +48,7 @@ Osoba ucząca się zawodowo kilku tematów naraz zdobywa wiedzę ad-hoc (np. w r
 | S-03 | diagnostic-quiz-by-subtopic     | user can rozwiązać quiz diagnostyczny z opcją „nie wiem” i zobaczyć wynik per podtemat                                                    | S-02          | US-01, FR-008, FR-009, FR-010                                         | done        |
 | S-04 | first-weak-subtopic-batch       | user can dostać partię fiszek z najsłabszych podtematów, czytać „więcej” i usuwać złe fiszki                                              | S-03          | US-01, FR-011, FR-012, FR-013, FR-028                                 | done        |
 | S-05 | multiple-choice-study-session   | user can uczyć się zaległych fiszek w formacie A/B/C/D z natychmiastowym sprawdzeniem i harmonogramem powrotów                            | S-04          | US-01, FR-014, FR-015                                                 | done        |
-| S-06 | ai-graded-open-answers          | user can odpowiadać otwarcie, dostać ocenę AI i opanować fiszkę po dwóch poprawnych odpowiedziach w różne dni                             | S-05          | US-01, FR-015, FR-016, FR-017, FR-018, FR-028                         | proposed    |
+| S-06 | ai-graded-open-answers          | user can odpowiadać otwarcie, dostać ocenę AI i opanować fiszkę po dwóch poprawnych odpowiedziach w różne dni                             | S-05          | US-01, FR-015, FR-016, FR-017, FR-018, FR-028                         | in-progress |
 | S-07 | next-batch-and-subtopic-mastery | user can zobaczyć opanowanie per podtemat i po 80% partii wygenerować kolejną ze słabych, nieopanowanych podtematów                       | S-06          | US-01, FR-019, FR-020                                                 | proposed    |
 | S-08 | home-screen-and-topic-archive   | user can zobaczyć ekran główny z zaległymi fiszkami i datą ostatniej sesji per temat oraz zmienić nazwę, zarchiwizować i przywrócić temat | S-05          | FR-007, FR-021                                                        | proposed    |
 | S-09 | daily-streak                    | user can widzieć licznik serii dni nauki                                                                                                  | S-05          | FR-023                                                                | proposed    |
@@ -185,7 +185,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Jaka tolerancja oceny na parafrazę/niepełność (PRD Open Question 2)? Start od prostego pass/fail. — Owner: user. Block: no.
 - **Risk:** Nazwane w PRD ryzyko do zwalidowania przed dalszą rozbudową — niespójna ocena podważa cały mechanizm opanowania, więc S-07 i S-10 czekają na ten wycinek.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-07: Opanowanie podtematów i kolejna partia
 

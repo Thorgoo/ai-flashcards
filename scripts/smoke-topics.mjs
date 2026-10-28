@@ -1,6 +1,6 @@
 // Smoke test of the topic flow as a signed-in user: create a topic, generate (AI_MODE=fake),
 // edit, regenerate, confirm, the lock, the quiz, the first flashcard batch, the study session
-// (A/B/C/D answers), another account, and the daily generation limit
+// (A/B/C/D answers, open answers graded by AI), another account, and the daily generation limit
 // against the real PostgREST. OAuth cannot run in CI, so test accounts are created with the
 // local Supabase admin API and signed in with a password; @supabase/ssr writes the session
 // cookies exactly as the app reads them.
@@ -19,7 +19,32 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
 
 const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const GENERATION_LIMIT = 20;
+const GRADING_LIMIT = 100;
 const BATCH_SIZE = 10;
+
+// A card's study state as stored, read with the service key.
+async function cardState(id) {
+  const { data, error } = await admin.from("flashcards").select("stage, open_streak, due_on").eq("id", id).single();
+  if (error) throw new Error(`reading card ${id} failed: ${error.message}`);
+  return data;
+}
+
+// Moves a card's next review to `day`, standing in for days passing.
+async function makeDue(id, day) {
+  const { error } = await admin.from("flashcards").update({ due_on: day }).eq("id", id);
+  if (error) throw new Error(`moving card ${id} failed: ${error.message}`);
+}
+
+// The account's AI gradings so far (ai_calls rows of kind 'grading').
+async function gradings(userId) {
+  const { count, error } = await admin
+    .from("ai_calls")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("kind", "grading");
+  if (error) throw new Error(`counting gradings failed: ${error.message}`);
+  return count;
+}
 
 // Copy of batchAllocation in src/lib/topics/flashcards-task.ts (node cannot import the TS
 // file); keep the two in step.
@@ -302,13 +327,14 @@ try {
   const study = `${topic}/study`;
   r = await api(study, { method: "GET", cookie: a.cookie });
   const due = r.json?.data?.cards ?? [];
+  const today = r.json?.data?.today;
   check(
     "the study session lists the due cards without the deleted one",
     r.status === 200 &&
       due.length === BATCH_SIZE - 1 &&
       !due.some((item) => item.id === card) &&
-      r.json?.data?.waitingOpen === 0 &&
-      typeof r.json?.data?.today === "string",
+      due.every((item) => item.stage === "choice") &&
+      typeof today === "string",
     describe(r),
   );
   const studied = due[0];
@@ -316,7 +342,7 @@ try {
   const wrong = (right + 1) % 4;
   const correctAttempt = randomUUID();
   r = await api(`${study}/answer`, {
-    body: { cardId: studied?.id, answer: wrong, attemptId: randomUUID() },
+    body: { format: "choice", cardId: studied?.id, answer: wrong, attemptId: randomUUID() },
     cookie: a.cookie,
   });
   check(
@@ -331,7 +357,7 @@ try {
     describe(r),
   );
   r = await api(`${study}/answer`, {
-    body: { cardId: studied?.id, answer: right, attemptId: correctAttempt },
+    body: { format: "choice", cardId: studied?.id, answer: right, attemptId: correctAttempt },
     cookie: a.cookie,
   });
   const firstResult = r.json?.data;
@@ -344,29 +370,33 @@ try {
     describe(r),
   );
   r = await api(study, { method: "GET", cookie: a.cookie });
+  let stored = await cardState(studied?.id);
   check(
     "a card answered correctly leaves the session and waits for the open format",
     r.status === 200 &&
       !r.json?.data?.cards?.some((item) => item.id === studied?.id) &&
       r.json?.data?.cards?.length === BATCH_SIZE - 2 &&
-      r.json?.data?.waitingOpen === 1,
-    describe(r),
+      stored?.stage === "open" &&
+      stored.due_on > today,
+    `${describe(r)}; card ${JSON.stringify(stored)}`,
   );
   r = await api(`${study}/answer`, {
-    body: { cardId: studied?.id, answer: right, attemptId: correctAttempt },
+    body: { format: "choice", cardId: studied?.id, answer: right, attemptId: correctAttempt },
     cookie: a.cookie,
   });
   const replay = r;
   r = await api(study, { method: "GET", cookie: a.cookie });
+  const replayed = await cardState(studied?.id);
   check(
     "a retried attempt returns the same result and changes nothing",
     replay.status === 200 &&
       JSON.stringify(replay.json?.data) === JSON.stringify(firstResult) &&
-      r.json?.data?.waitingOpen === 1,
-    `${describe(replay)}; ${describe(r)}`,
+      r.json?.data?.cards?.length === BATCH_SIZE - 2 &&
+      JSON.stringify(replayed) === JSON.stringify(stored),
+    `${describe(replay)}; ${describe(r)}; card ${JSON.stringify(replayed)}`,
   );
   r = await api(`${study}/answer`, {
-    body: { cardId: studied?.id, answer: wrong, attemptId: randomUUID() },
+    body: { format: "choice", cardId: studied?.id, answer: wrong, attemptId: randomUUID() },
     cookie: a.cookie,
   });
   check(
@@ -374,7 +404,10 @@ try {
     r.status === 409 && r.json?.error?.code === "card_not_due",
     describe(r),
   );
-  r = await api(`${study}/answer`, { body: { cardId: card, answer: 0, attemptId: randomUUID() }, cookie: a.cookie });
+  r = await api(`${study}/answer`, {
+    body: { format: "choice", cardId: card, answer: 0, attemptId: randomUUID() },
+    cookie: a.cookie,
+  });
   check(
     "a deleted card cannot be answered",
     r.status === 404 && r.json?.error?.code === "flashcard_not_found",
@@ -383,13 +416,90 @@ try {
   r = await api(study, { method: "GET", cookie: b.cookie });
   check("another account cannot read the study session", r.status === 404, describe(r));
   r = await api(`${study}/answer`, {
-    body: { cardId: due[1]?.id, answer: 0, attemptId: randomUUID() },
+    body: { format: "choice", cardId: due[1]?.id, answer: 0, attemptId: randomUUID() },
     cookie: b.cookie,
   });
   check("another account cannot answer in the study session", r.status === 404, describe(r));
 
+  // Open answers (S-06) on the card the S-05 steps moved to the open format. Days pass by
+  // moving due_on back to today with the service key (the app cannot change it).
+  const open = (answerText, attemptId = randomUUID(), cookie = a.cookie) =>
+    api(`${study}/answer`, { body: { format: "open", cardId: studied?.id, answerText, attemptId }, cookie });
+  await makeDue(studied?.id, today);
+  r = await api(study, { method: "GET", cookie: a.cookie });
+  const openCard = r.json?.data?.cards?.find((item) => item.id === studied?.id);
+  check(
+    "a due open card is in the study session",
+    r.status === 200 && openCard?.stage === "open" && openCard?.openStreak === 0,
+    describe(r),
+  );
+  r = await open("Odpowiedź", correctAttempt);
+  check(
+    "an attempt of the choice format cannot be replayed as an open answer",
+    r.status === 409 && r.json?.error?.code === "attempt_conflict" && (await gradings(a.userId)) === 0,
+    describe(r),
+  );
+  const wrongAttempt = randomUUID();
+  r = await open("To jest maszyna wirtualna.", wrongAttempt);
+  const wrongResult = r.json?.data;
+  check(
+    "a wrong open answer is graded (fake AI) and keeps the streak at 0",
+    r.status === 200 &&
+      r.headers.get("X-AI-Mode") === "fake" &&
+      wrongResult?.correct === false &&
+      typeof wrongResult?.feedback === "string" &&
+      wrongResult?.stage === "open" &&
+      wrongResult?.openStreak === 0 &&
+      r.json?.remaining === GRADING_LIMIT - 1 &&
+      (await gradings(a.userId)) === 1,
+    describe(r),
+  );
+  r = await open("To jest maszyna wirtualna.", wrongAttempt);
+  check(
+    "a retried open attempt returns the same result without grading again",
+    r.status === 200 &&
+      JSON.stringify(r.json?.data) === JSON.stringify(wrongResult) &&
+      (await gradings(a.userId)) === 1,
+    describe(r),
+  );
+  r = await open("Odpowiadam poprawnie.");
+  check(
+    "an open card graded today cannot be answered again the same day",
+    r.status === 409 && r.json?.error?.code === "card_not_due" && (await gradings(a.userId)) === 1,
+    describe(r),
+  );
+  await makeDue(studied?.id, today);
+  r = await open("Odpowiadam poprawnie: to grupa kontenerów.");
+  stored = await cardState(studied?.id);
+  check(
+    "a correct open answer raises the streak to 1 and moves the card 3 days on",
+    r.status === 200 &&
+      r.json?.data?.correct === true &&
+      r.json?.data?.stage === "open" &&
+      r.json?.data?.openStreak === 1 &&
+      r.json?.remaining === GRADING_LIMIT - 2 &&
+      stored?.open_streak === 1 &&
+      stored.due_on > today,
+    `${describe(r)}; card ${JSON.stringify(stored)}`,
+  );
+  await makeDue(studied?.id, today);
+  r = await open("Znowu poprawnie: grupa kontenerów.");
+  check(
+    "a second correct open answer masters the card",
+    r.status === 200 && r.json?.data?.correct === true && r.json?.data?.stage === "mastered",
+    describe(r),
+  );
+  r = await api(study, { method: "GET", cookie: a.cookie });
+  check(
+    "a mastered card leaves the study session",
+    r.status === 200 && !r.json?.data?.cards?.some((item) => item.id === studied?.id),
+    describe(r),
+  );
+  r = await open("Odpowiadam poprawnie.", randomUUID(), b.cookie);
+  check("another account cannot give an open answer", r.status === 404, describe(r));
+
   // Four generations used so far (generate, regenerate, quiz, flashcards; the study session
-  // calls no AI); refused calls must not count.
+  // calls no AI and grading has its own limit); refused calls must not count.
   const generations = [];
   for (let i = 5; i <= GENERATION_LIMIT + 1; i++) {
     generations.push(await api(`${draft}/generate`, { cookie: a.cookie }));
