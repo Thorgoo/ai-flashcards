@@ -1,7 +1,7 @@
 ---
 change_id: multiple-choice-study-session
 title: Multiple choice study session
-status: implemented
+status: impl_reviewed
 created: 2026-10-25
 updated: 2026-10-28
 archived_at: null

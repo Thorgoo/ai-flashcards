@@ -12,7 +12,7 @@
 - Only `answer_flashcard_choice` changes a card's study columns (`stage`, `due_on`, …); S-06 adds its own function for the open format. Never update them from TS or a new policy.
 - Every answer is one `flashcard_answers` row; the client's `attemptId` is the idempotency key, so a retry reuses it (`@../../components/topics/StudySession.tsx`).
 - "Today" is the Europe/Warsaw date: `@study-day.ts` for reads, the database for writes.
-- The answer log survives deleting its card (`flashcard_id` becomes null); never cascade-delete it.
+- Deleting a card sets `flashcard_answers.flashcard_id` to null and keeps the answer; only deleting the topic or the account removes the log.
 
 ## Endpoints
 

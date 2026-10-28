@@ -34,7 +34,7 @@ interface ChoiceRow {
 
 type StudyCardRow = CardRow & { due_on: string };
 
-const P0409_REASONS: TopicErrorCode[] = ["flashcard_not_found", "card_not_due"];
+const P0409_REASONS: TopicErrorCode[] = ["flashcard_not_found", "card_not_due", "attempt_conflict"];
 
 // answer_flashcard_choice names the reason in the hint (migration flashcard_study_state).
 function errorCode(error: PostgrestError): TopicErrorCode {

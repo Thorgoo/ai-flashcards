@@ -5,7 +5,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(29);
+select plan(31);
 
 insert into auth.users (id, email)
 values
@@ -141,6 +141,14 @@ select results_eq(
   'refused answers change no card and add no log row'
 );
 
+-- An attempt belongs to its card: card 0's attempt sent with card 2 is refused.
+select throws_ok(
+  $$ select public.answer_flashcard_choice(current_setting('test.card2')::uuid, 0::smallint, '00000000-0000-0000-0000-000000000f01') $$,
+  'P0409',
+  'attempt_conflict',
+  'an attempt of another card is refused'
+);
+
 -- Another account cannot answer A's card or read A's result by its attempt id.
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
 
@@ -155,6 +163,42 @@ select throws_ok(
   'P0409',
   'flashcard_not_found',
   'another account cannot replay A''s attempt'
+);
+
+-- B's own card with A's attempt id: a conflict, not a raw unique violation.
+insert into public.topics (id, name) values ('00000000-0000-0000-0000-0000000000b1', 'Docker');
+insert into public.subtopics (id, topic_id, name, content_type, position)
+values
+  ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000b1', 'S1', 'conceptual', 0),
+  ('00000000-0000-0000-0000-0000000000d2', '00000000-0000-0000-0000-0000000000b1', 'S2', 'conceptual', 1);
+update public.topics set status = 'confirmed' where id = '00000000-0000-0000-0000-0000000000b1';
+select public.create_quiz(
+  '00000000-0000-0000-0000-0000000000b1',
+  (select jsonb_agg(jsonb_build_object(
+     'subtopic_id', case when i % 2 = 0 then '00000000-0000-0000-0000-0000000000d1' else '00000000-0000-0000-0000-0000000000d2' end,
+     'prompt', 'Pytanie ' || i, 'options', jsonb_build_array('dobra', 'zła 1', 'zła 2', 'zła 3'), 'correct_index', 0))
+   from generate_series(0, 9) as i)
+);
+select public.answer_quiz_question(q.id, 0::smallint)
+from public.quiz_questions q
+where q.topic_id = '00000000-0000-0000-0000-0000000000b1';
+select public.claim_flashcard_batch('00000000-0000-0000-0000-0000000000b1');
+select public.create_flashcard_batch(
+  '00000000-0000-0000-0000-0000000000b1',
+  (select jsonb_agg(jsonb_build_object(
+     'subtopic_id', case when i % 2 = 0 then '00000000-0000-0000-0000-0000000000d1' else '00000000-0000-0000-0000-0000000000d2' end,
+     'front', 'Fiszka ' || i, 'answer', 'Odpowiedź ' || i,
+     'options', jsonb_build_array('dobra', 'zła 1', 'zła 2', 'zła 3'),
+     'correct_index', 0, 'explanation', 'Wyjaśnienie ' || i, 'example', null) order by i)
+   from generate_series(0, 9) as i)
+);
+select set_config('test.b_card', (select id::text from public.flashcards where position = 0), true);
+
+select throws_ok(
+  $$ select public.answer_flashcard_choice(current_setting('test.b_card')::uuid, 0::smallint, '00000000-0000-0000-0000-000000000f02') $$,
+  'P0409',
+  'attempt_conflict',
+  'an attempt id taken by another account is a conflict, not a unique violation'
 );
 
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
