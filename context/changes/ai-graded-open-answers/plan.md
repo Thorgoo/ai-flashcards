@@ -298,7 +298,7 @@ Migracja wyłącznie rozszerzająca: nowe kolumny nullable z checkami spełniany
 
 #### Manual
 
-- [ ] 2.5 Na podglądzie gałęzi z prawdziwym AI (temat testowy): 3 odpowiedzi — sedno innymi słowami, pominięty szczegół, błąd merytoryczny — dają poprawna / poprawna / błędna z sensownym uzasadnieniem; ocena typowo < 5 s
+- [x] 2.5 Na podglądzie gałęzi z prawdziwym AI (temat testowy): 3 odpowiedzi — sedno innymi słowami, pominięty szczegół, błąd merytoryczny — dają poprawna / poprawna / błędna z sensownym uzasadnieniem; ocena typowo < 5 s
 
 ### Phase 3: UI odpowiedzi otwartej
 
@@ -310,7 +310,7 @@ Migracja wyłącznie rozszerzająca: nowe kolumny nullable z checkami spełniany
 
 #### Manual
 
-- [ ] 3.4 Na telefonie (produkcja, temat testowy): pisanie, „Sprawdź”, widoczny stan oceny, werdykt z uzasadnieniem i wzorcową odpowiedzią; bez poziomego przewijania
-- [ ] 3.5 Symulowany błąd sieci przy ocenie: tekst zostaje, „Spróbuj ponownie” ocenia bez przepisywania; odświeżenie przed ponowieniem przywraca tekst
-- [ ] 3.6 Oceniona fiszka otwarta nie wraca w tej samej sesji; „Ucz się (N)” liczy zaległe fiszki otwarte
-- [ ] 3.7 Symulowane 429 `quota_exceeded`: komunikat o limicie, fiszki otwarte pominięte, A/B/C/D dostępne dalej
+- [x] 3.4 Na telefonie (produkcja, temat testowy): pisanie, „Sprawdź”, widoczny stan oceny, werdykt z uzasadnieniem i wzorcową odpowiedzią; bez poziomego przewijania
+- [x] 3.5 Symulowany błąd sieci przy ocenie: tekst zostaje, „Spróbuj ponownie” ocenia bez przepisywania; odświeżenie przed ponowieniem przywraca tekst
+- [x] 3.6 Oceniona fiszka otwarta nie wraca w tej samej sesji; „Ucz się (N)” liczy zaległe fiszki otwarte
+- [x] 3.7 Symulowane 429 `quota_exceeded`: komunikat o limicie, fiszki otwarte pominięte, A/B/C/D dostępne dalej
