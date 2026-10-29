@@ -4,6 +4,7 @@ import Topbar from "@/components/Topbar.astro";
 import TopicEditor from "@/components/topics/TopicEditor";
 import { createClient } from "@/lib/supabase";
 import { getFlashcardState, hasReadyBatch } from "@/lib/topics/flashcard-repository";
+import type { SubtopicMastery } from "@/lib/topics/mastery";
 import { getQuizState, type QuizState } from "@/lib/topics/quiz-repository";
 import { getTopic } from "@/lib/topics/repository";
 import { isUuid } from "@/lib/topics/schemas";
@@ -42,11 +43,18 @@ const quiz = quizState
 // Same for flashcards: a failed read only shows "Wygeneruj fiszki"; the flashcards page reports it.
 let hasFlashcards = false;
 let study: { dueCount: number | null } | null = null;
+// Per-subtopic mastery once a batch is ready; a failed read shows the list without it.
+let mastery: SubtopicMastery[] | null = null;
+let topicMastered = false;
 if (supabase && found && quiz?.completed) {
   try {
     const flashcards = await getFlashcardState(supabase, found.topic.id);
     hasFlashcards = flashcards !== null;
-    if (hasReadyBatch(flashcards)) study = { dueCount: null };
+    if (flashcards && hasReadyBatch(flashcards)) {
+      study = { dueCount: null };
+      mastery = flashcards.subtopics;
+      topicMastered = flashcards.topicMastered;
+    }
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("[topics] reading flashcards failed", error);
@@ -75,6 +83,8 @@ if (supabase && found && study) {
           quiz={quiz}
           hasFlashcards={hasFlashcards}
           study={study}
+          mastery={mastery}
+          topicMastered={topicMastered}
         />
       ) : (
         <div class="space-y-4">

@@ -355,10 +355,10 @@ Strona fiszek z wieloma partiami, postępem i przyciskiem kolejnej partii; opano
 
 #### Automated
 
-- [x] 3.1 Testy jednostkowe przechodzą: `npm test` (w tym `schemas.test.ts`)
-- [x] 3.2 Kontrola typów i build przechodzą: `npm run build`
-- [x] 3.3 Lint przechodzi: `npm run lint`
-- [ ] 3.4 Rozszerzony `smoke-topics.mjs` przechodzi w CI
+- [x] 3.1 Testy jednostkowe przechodzą: `npm test` (w tym `schemas.test.ts`) — 04ee0a2
+- [x] 3.2 Kontrola typów i build przechodzą: `npm run build` — 04ee0a2
+- [x] 3.3 Lint przechodzi: `npm run lint` — 04ee0a2
+- [x] 3.4 Rozszerzony `smoke-topics.mjs` przechodzi w CI — 04ee0a2
 
 #### Manual
 
@@ -368,9 +368,9 @@ Strona fiszek z wieloma partiami, postępem i przyciskiem kolejnej partii; opano
 
 #### Automated
 
-- [ ] 4.1 Build i typy przechodzą: `npm run build`
-- [ ] 4.2 Lint przechodzi: `npm run lint`
-- [ ] 4.3 Testy jednostkowe nadal przechodzą: `npm test`
+- [x] 4.1 Build i typy przechodzą: `npm run build`
+- [x] 4.2 Lint przechodzi: `npm run lint`
+- [x] 4.3 Testy jednostkowe nadal przechodzą: `npm test`
 
 #### Manual
 
