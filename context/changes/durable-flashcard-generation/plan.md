@@ -314,28 +314,28 @@ POST now answers in well under a second (claim + enqueue + one state read). The 
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test`
-- [x] 2.2 Lint and types pass: `npm run lint` and `npx astro check`
-- [x] 2.3 Build succeeds with the custom entry: `npm run build`
-- [ ] 2.4 pgTAP passes: `npm run db:test`
-- [ ] 2.5 Smoke passes against `npm run preview` with fake AI through the local queue: `npm run smoke:topics`
-- [ ] 2.6 CI is green on the PR
+- [x] 2.1 Unit tests pass: `npm test` — b5d8a00
+- [x] 2.2 Lint and types pass: `npm run lint` and `npx astro check` — b5d8a00
+- [x] 2.3 Build succeeds with the custom entry: `npm run build` — b5d8a00
+- [x] 2.4 pgTAP passes: `npm run db:test` — b5d8a00
+- [x] 2.5 Smoke passes against `npm run preview` with fake AI through the local queue: `npm run smoke:topics` — b5d8a00
+- [x] 2.6 CI is green on the PR — b5d8a00
 
 #### Manual
 
-- [x] 2.7 Queue `flashcard-generation` exists on the Cloudflare account before merge
+- [x] 2.7 Queue `flashcard-generation` exists on the Cloudflare account before merge — b5d8a00
 - [ ] 2.8 Locally the flashcards page generates batch 1 and batch 2 through the queue
-- [ ] 2.9 The Workers Builds preview build for the PR still succeeds
+- [x] 2.9 The Workers Builds preview build for the PR still succeeds — b5d8a00
 
 ### Phase 3: Production verification and close-out
 
 #### Automated
 
-- [ ] 3.1 Lint passes after the doc edits: `npm run lint`
+- [x] 3.1 Lint passes after the doc edits: `npm run lint` — b5bc49b
 
 #### Manual
 
-- [ ] 3.2 Production reload during batch 1 ends with the batch saved and one `ai_calls` row `ok`
+- [x] 3.2 Production reload during batch 1 ends with the batch saved and one `ai_calls` row `ok` — b5bc49b
 - [ ] 3.3 Production closed tab during batch 2 ends with the batch saved and one `ai_calls` row `ok`
-- [ ] 3.4 Consumer logs show no CPU-limit errors; CPU per invocation recorded in `infrastructure.md`
-- [ ] 3.5 Quiz and study flows still work on production
+- [x] 3.4 Consumer logs show no CPU-limit errors; CPU per invocation recorded in `infrastructure.md` — b5bc49b
+- [x] 3.5 Quiz and study flows still work on production — b5bc49b
