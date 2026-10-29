@@ -1,10 +1,10 @@
 ---
 change_id: ai-graded-open-answers
 title: Ai graded open answers
-status: impl_reviewed
+status: archived
 created: 2026-10-28
 updated: 2026-10-29
-archived_at: null
+archived_at: 2026-10-29T13:52:38Z
 ---
 
 ## Notes
