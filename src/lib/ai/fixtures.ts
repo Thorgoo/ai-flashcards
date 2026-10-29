@@ -1,4 +1,4 @@
-import { FLASHCARDS_TASK } from "@/lib/topics/flashcards-task";
+import { FLASHCARDS_TASK, NEXT_FLASHCARDS_TASK } from "@/lib/topics/flashcards-task";
 import { GRADING_TASK } from "@/lib/topics/grading-task";
 import { QUIZ_TASK } from "@/lib/topics/quiz-task";
 import { SUBTOPICS_TASK } from "@/lib/topics/subtopics-task";
@@ -78,5 +78,7 @@ export const fakeFixtures: Record<string, FakeFixture> = {
   [SUBTOPICS_TASK]: subtopics,
   [QUIZ_TASK]: quiz,
   [FLASHCARDS_TASK]: flashcards,
+  // Next batches use the same <podtemat> tags; the <istniejace_pytania> block is not read.
+  [NEXT_FLASHCARDS_TASK]: flashcards,
   [GRADING_TASK]: grading,
 };

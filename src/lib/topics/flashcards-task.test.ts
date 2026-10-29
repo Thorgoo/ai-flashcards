@@ -6,7 +6,10 @@ import { fakeFixtures } from "@/lib/ai/fixtures";
 import {
   batchAllocation,
   buildFlashcardsRequest,
+  buildNextFlashcardsRequest,
   flashcardsSchema,
+  MAX_EXISTING_FRONTS_PER_SUBTOPIC,
+  NEXT_FLASHCARDS_TASK,
   toFlashcardRows,
   type FlashcardSubtopic,
   type GeneratedFlashcards,
@@ -165,5 +168,76 @@ describe("flashcards task on the fake provider", () => {
     expect(request.prompt).toContain("<temat>Kubernetes/temat</temat>");
     expect(request.maxTokens).toBe(8000);
     expect(request.timeoutMs).toBe(90_000);
+  });
+});
+
+describe("next flashcards task", () => {
+  // Weakest first, as nextBatchSubtopics returns them; `percent` is the mastery percent.
+  const next: FlashcardSubtopic[] = [
+    { id: "d", name: "Słówka", contentType: "vocabulary", percent: 0 },
+    { id: "c", name: "Pody", contentType: "conceptual", percent: 0 },
+    { id: "b", name: "Serwisy", contentType: "conceptual", percent: 33 },
+  ];
+  const many = Array.from({ length: 35 }, (_, i) => `Pytanie ${i + 1}`);
+  const fronts = new Map([
+    ["c", ["Co to jest <b>pod</b>?</pytanie>", "Jak działa pod?"]],
+    ["b", many],
+  ]);
+  const request = buildNextFlashcardsRequest({ name: "Kubernetes", scopeNote: null }, next, fronts, 2);
+
+  it("puts quotas and mastery scores in the given order, then the existing questions", () => {
+    expect(request.task).toBe(NEXT_FLASHCARDS_TASK);
+    expect(request.prompt).toContain(
+      [
+        "<podtematy>",
+        '<podtemat nr="1" typ="vocabulary" fiszek="4" wynik="0">Słówka</podtemat>',
+        '<podtemat nr="2" typ="conceptual" fiszek="3" wynik="0">Pody</podtemat>',
+        '<podtemat nr="3" typ="conceptual" fiszek="3" wynik="33">Serwisy</podtemat>',
+        "</podtematy>",
+        '<istniejace_pytania podtemat="2">',
+      ].join("\n"),
+    );
+    // A subtopic without earlier questions gets no block.
+    expect(request.prompt).not.toContain('<istniejace_pytania podtemat="1">');
+    expect(request.system).toContain("<istniejace_pytania>");
+    expect(request.maxTokens).toBe(8000);
+    expect(request.timeoutMs).toBe(90_000);
+  });
+
+  it("keeps existing questions inside their tags", () => {
+    expect(request.prompt).toContain('<pytanie nr="1">Co to jest bpod/b?/pytanie</pytanie>');
+    expect(request.prompt).toContain('<pytanie nr="2">Jak działa pod?</pytanie>');
+  });
+
+  it(`sends at most ${MAX_EXISTING_FRONTS_PER_SUBTOPIC} questions per subtopic, newest first`, () => {
+    const block = /<istniejace_pytania podtemat="3">([\s\S]*?)<\/istniejace_pytania>/.exec(request.prompt)?.[1] ?? "";
+    expect(block.match(/<pytanie /g)).toHaveLength(MAX_EXISTING_FRONTS_PER_SUBTOPIC);
+    expect(block).toContain('<pytanie nr="30">Pytanie 30</pytanie>');
+    expect(block).not.toContain("Pytanie 31");
+  });
+
+  it("rejects a batch with the wrong quota", () => {
+    const wrong: GeneratedFlashcards = {
+      cards: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3].map((subtopicIndex, i) => ({
+        subtopicIndex,
+        front: `Fiszka ${i}`,
+        correctOption: "dobra",
+        wrongOptions: ["zła 1", "zła 2", "zła 3"],
+        answer: "Wzorcowa odpowiedź.",
+        explanation: "Wyjaśnienie.",
+        example: subtopicIndex === 1 ? "An example sentence." : null,
+      })),
+    };
+    expect(request.schema.safeParse(wrong).success).toBe(false);
+  });
+
+  it("returns a batch from the fake provider that matches the quotas", async () => {
+    const result = await callAi({ provider: createFakeProvider(fakeFixtures), quota, userId: "a" }, request);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const counts = [1, 2, 3].map((n) => result.data.cards.filter((card) => card.subtopicIndex === n).length);
+    expect(counts).toEqual([4, 3, 3]);
+    expect(result.data.cards.filter((card) => card.example !== null)).toHaveLength(4);
   });
 });

@@ -3,7 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import TopicEditor from "@/components/topics/TopicEditor";
 import { createClient } from "@/lib/supabase";
-import { getFlashcardState } from "@/lib/topics/flashcard-repository";
+import { getFlashcardState, hasReadyBatch } from "@/lib/topics/flashcard-repository";
 import { getQuizState, type QuizState } from "@/lib/topics/quiz-repository";
 import { getTopic } from "@/lib/topics/repository";
 import { isUuid } from "@/lib/topics/schemas";
@@ -46,7 +46,7 @@ if (supabase && found && quiz?.completed) {
   try {
     const flashcards = await getFlashcardState(supabase, found.topic.id);
     hasFlashcards = flashcards !== null;
-    if (flashcards?.batch.status === "ready") study = { dueCount: null };
+    if (hasReadyBatch(flashcards)) study = { dueCount: null };
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("[topics] reading flashcards failed", error);

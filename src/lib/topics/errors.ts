@@ -12,6 +12,8 @@ export type TopicErrorCode =
   | "quiz_not_completed"
   | "batch_exists"
   | "batch_generating"
+  | "next_batch_locked"
+  | "topic_mastered"
   | "flashcard_not_found"
   | "card_not_due"
   | "attempt_conflict"
@@ -34,8 +36,14 @@ const errors: Record<TopicErrorCode, { message: string; retryable: boolean; stat
   quiz_generating: { message: "Quiz jest właśnie przygotowywany.", retryable: false, status: 409 },
   question_locked: { message: "To pytanie ma już odpowiedź.", retryable: false, status: 409 },
   quiz_not_completed: { message: "Najpierw ukończ quiz diagnostyczny.", retryable: false, status: 409 },
-  batch_exists: { message: "Ten temat ma już pierwszą partię fiszek.", retryable: false, status: 409 },
+  batch_exists: { message: "Ta partia fiszek jest już gotowa.", retryable: false, status: 409 },
   batch_generating: { message: "Fiszki są właśnie przygotowywane.", retryable: false, status: 409 },
+  next_batch_locked: {
+    message: "Kolejna partia odblokuje się po opanowaniu 80% fiszek bieżącej partii.",
+    retryable: false,
+    status: 409,
+  },
+  topic_mastered: { message: "Wszystkie podtematy tego tematu są już opanowane.", retryable: false, status: 409 },
   flashcard_not_found: { message: "Nie znaleziono fiszki.", retryable: false, status: 404 },
   card_not_due: { message: "Ta fiszka nie czeka już na powtórkę.", retryable: false, status: 409 },
   attempt_conflict: {

@@ -289,13 +289,13 @@ try {
   const percentOf = new Map(results.map((row) => [row.subtopicId, row.percent]));
   const expected = batchAllocation(confirmed.map((subtopic) => percentOf.get(subtopic.id) ?? 0));
   r = await api(`${topic}/flashcards`, { cookie: a.cookie });
-  const cards = r.json?.data?.cards ?? [];
+  const cards = r.json?.data?.batches?.[0]?.cards ?? [];
   const perSubtopic = confirmed.map((subtopic) => cards.filter((card) => card.subtopicId === subtopic.id).length);
   check(
     "generate the first flashcard batch (fake AI) split by the quiz results",
     r.status === 200 &&
       r.headers.get("X-AI-Mode") === "fake" &&
-      r.json?.data?.batch?.status === "ready" &&
+      r.json?.data?.batches?.length === 1 &&
       cards.length === BATCH_SIZE &&
       confirmed.length > 0 &&
       perSubtopic.every((count) => count >= 1) &&
@@ -310,8 +310,8 @@ try {
   check(
     "delete a flashcard",
     r.status === 200 &&
-      r.json?.data?.cards?.length === BATCH_SIZE - 1 &&
-      !r.json.data.cards.some((item) => item.id === card),
+      r.json?.data?.batches?.[0]?.cards?.length === BATCH_SIZE - 1 &&
+      !r.json.data.batches[0].cards.some((item) => item.id === card),
     describe(r),
   );
   r = await api(`${topic}/flashcards/${card}`, { method: "DELETE", cookie: a.cookie });

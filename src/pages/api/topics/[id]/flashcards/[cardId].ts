@@ -4,7 +4,7 @@ import { deleteFlashcard } from "@/lib/topics/flashcard-repository";
 import { loadTopic, readFlashcardState, requireSession } from "@/lib/topics/http";
 import { isUuid } from "@/lib/topics/schemas";
 
-// Deletes a flashcard for good and returns the batch's full state.
+// Deletes a flashcard for good and returns the topic's full flashcard state.
 export const DELETE: APIRoute = async (context) => {
   const session = requireSession(context);
   if (session instanceof Response) return session;

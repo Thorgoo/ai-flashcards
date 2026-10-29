@@ -330,26 +330,26 @@ Strona fiszek z wieloma partiami, postępem i przyciskiem kolejnej partii; opano
 
 #### Automated
 
-- [ ] 1.1 Migracja i testy bazy przechodzą w CI (`smoke` → `Database tests`)
-- [ ] 1.2 `flashcard_next.test.sql` pokrywa próg (8/10, 7/10, 6/7, 5/7, pusta partia), numerację, `topic_mastered`, podtemat bez fiszek, claim/TTL, `create`/`release` z tokenem i izolację konta
-- [x] 1.3 Lint przechodzi: `npm run lint`
+- [x] 1.1 Migracja i testy bazy przechodzą w CI (`smoke` → `Database tests`) — 0b73626
+- [x] 1.2 `flashcard_next.test.sql` pokrywa próg (8/10, 7/10, 6/7, 5/7, pusta partia), numerację, `topic_mastered`, podtemat bez fiszek, claim/TTL, `create`/`release` z tokenem i izolację konta — 0b73626
+- [x] 1.3 Lint przechodzi: `npm run lint` — 0b73626
 
 #### Manual
 
-- [x] 1.4 Przegląd migracji: wyłącznie rozszerzająca, stare funkcje partii 1 nietknięte, brak `grant` dla `anon`/`public`, komentarz o zgodności z `mastery.ts` obecny
+- [x] 1.4 Przegląd migracji: wyłącznie rozszerzająca, stare funkcje partii 1 nietknięte, brak `grant` dla `anon`/`public`, komentarz o zgodności z `mastery.ts` obecny — 0b73626
 
 ### Phase 2: Domena i zadanie AI
 
 #### Automated
 
-- [ ] 2.1 Testy jednostkowe przechodzą: `npm test` (`mastery.test.ts`, `flashcards-task.test.ts`)
-- [ ] 2.2 Kontrola typów i build przechodzą: `npm run build`
-- [ ] 2.3 Lint przechodzi: `npm run lint`
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (`mastery.test.ts`, `flashcards-task.test.ts`)
+- [x] 2.2 Kontrola typów i build przechodzą: `npm run build`
+- [x] 2.3 Lint przechodzi: `npm run lint`
 - [ ] 2.4 Istniejący `smoke-topics.mjs` (partia 1, nauka) nadal przechodzi w CI
 
 #### Manual
 
-- [ ] 2.5 Przegląd promptu `flashcards-next`: dane użytkownika i istniejące pytania tylko w tagach przez `asData`, polecenie o nowych zagadnieniach zrozumiałe
+- [x] 2.5 Przegląd promptu `flashcards-next`: dane użytkownika i istniejące pytania tylko w tagach przez `asData`, polecenie o nowych zagadnieniach zrozumiałe
 
 ### Phase 3: API
 

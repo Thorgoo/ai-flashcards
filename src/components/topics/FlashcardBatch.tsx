@@ -67,12 +67,15 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const generating = busy === "generate" || state?.batch.status === "generating";
+  const generating = busy === "generate" || Boolean(state?.generating);
+  // Shows the newest ready batch; the view of every batch comes with the next batches (S-07).
+  const cards = state?.batches.at(0)?.cards ?? [];
+  const ready = (state?.batches.length ?? 0) > 0;
 
   // A generation started before a reload, or in another tab, finishes on the server; poll
   // until the batch is ready (or its claim expires and reads as no batch).
   useEffect(() => {
-    if (state?.batch.status !== "generating" || busy !== null) return;
+    if (!state?.generating || busy !== null) return;
     const timer = window.setInterval(() => void refresh(), POLL_MS);
     return () => {
       window.clearInterval(timer);
@@ -120,14 +123,14 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
             Wygeneruj fiszki
           </Button>
         </div>
-      ) : state.cards.length === 0 ? (
+      ) : cards.length === 0 ? (
         <p className="border-border text-muted-foreground rounded-lg border p-6 text-center">
           Ta partia nie ma już fiszek.
         </p>
       ) : (
         <div aria-busy={busy !== null} className="space-y-6">
-          <p className="text-muted-foreground text-sm">Fiszki w partii: {state.cards.length}</p>
-          {groupBySubtopic(state.cards).map((group) => (
+          <p className="text-muted-foreground text-sm">Fiszki w partii: {cards.length}</p>
+          {groupBySubtopic(cards).map((group) => (
             <section key={group[0].subtopicId} className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="min-w-0 text-lg font-semibold break-words">{group[0].subtopicName}</h2>
@@ -150,7 +153,7 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
         </div>
       )}
 
-      {!generating && state?.batch.status === "ready" && (
+      {!generating && ready && (
         <Button asChild>
           <a href={`/topics/${topicId}/study`}>
             <GraduationCap />
