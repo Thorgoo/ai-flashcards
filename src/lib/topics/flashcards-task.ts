@@ -9,8 +9,8 @@ export const NEXT_FLASHCARDS_TASK = "flashcards-next";
 export const MAX_EXISTING_FRONTS_PER_SUBTOPIC = 30;
 export const BATCH_SIZE = 10;
 // A generating batch older than this is abandoned (claim_flashcard_batch, migration
-// create_flashcards); longer than the task's 90 s AI timeout.
-export const FLASHCARD_CLAIM_TTL_SECONDS = 120;
+// flashcard_claim_ttl_180); covers the task's 90 s AI timeout plus queue delivery and the save.
+export const FLASHCARD_CLAIM_TTL_SECONDS = 180;
 const WRONG_OPTION_COUNT = 3;
 
 // Every subtopic gets one card, a 100% one included (FR-020); the rest of the batch goes

@@ -1,7 +1,7 @@
 ---
 change_id: durable-flashcard-generation
 title: Durable flashcard generation
-status: implemented
+status: impl_reviewed
 created: 2026-10-29
 updated: 2026-10-29
 archived_at: null
