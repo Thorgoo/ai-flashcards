@@ -257,6 +257,25 @@ function summarize(rows: StateRows<SummaryCardRow>): FlashcardSummary | null {
   };
 }
 
+// The status and claim token of batch `seq`, or null without the row (the queue consumer checks
+// its job still owns the claim before the AI call). Throws on database errors.
+export async function getFlashcardBatchClaim(
+  supabase: SupabaseClient,
+  topicId: string,
+  seq: number,
+): Promise<{ status: BatchRow["status"]; claimedAt: string } | null> {
+  const { data, error, status } = await supabase
+    .from("flashcard_batches")
+    .select("status, claimed_at")
+    .eq("topic_id", topicId)
+    .eq("seq", seq)
+    .maybeSingle<Pick<BatchRow, "status" | "claimed_at">>();
+  if (error) {
+    throw new Error(`loading flashcard batch failed (HTTP ${status}): ${error.message}`);
+  }
+  return data ? { status: data.status, claimedAt: data.claimed_at } : null;
+}
+
 // Reserves the topic's first batch before the AI call: refuses a second batch and a
 // generation already running in another request (claim_flashcard_batch). The value is the
 // claim's token: release and create pass it back, so they never touch a taken-over claim.

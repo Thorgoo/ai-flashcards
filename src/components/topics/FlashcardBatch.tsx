@@ -101,8 +101,9 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
         }
       : null);
 
-  // A generation started before a reload, or in another tab, finishes on the server; poll
-  // until the batch is ready or failed (or its claim expires and reads as no batch).
+  // POST answers 202 once the generation is queued; it runs on the server whatever happens to
+  // this page (a reload, another tab). Poll until the batch is ready or failed (or its claim
+  // expires and reads as no batch).
   useEffect(() => {
     if (!state?.generating || busy !== null) return;
     const timer = window.setInterval(() => void poll(), POLL_MS);

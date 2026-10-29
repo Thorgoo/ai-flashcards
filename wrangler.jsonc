@@ -1,7 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ai-flashcards",
-  "main": "@astrojs/cloudflare/entrypoints/server",
+  // Custom entry: the Astro handler plus the flashcard generation queue consumer
+  "main": "./src/worker.ts",
   "compatibility_date": "2026-05-08",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
@@ -11,9 +12,20 @@
   },
   // Astro sessions; declared explicitly because Workers Builds previews cannot auto-provision it
   "kv_namespaces": [{ "binding": "SESSION", "id": "c5c7150d952f43dc83e3f7572905b2b8" }],
+  // Flashcard generation runs in the consumer, outside the request (src/lib/topics/flashcard-generation.ts).
+  // No retries: every AI call uses up the user's daily limit, so only the user retries.
+  "queues": {
+    "producers": [{ "binding": "FLASHCARD_JOBS", "queue": "flashcard-generation" }],
+    "consumers": [{ "queue": "flashcard-generation", "max_batch_size": 1, "max_retries": 0 }],
+  },
   // Workers Builds branch previews (`wrangler preview`) use this section; separate KV keeps preview sessions out of prod
   "previews": {
     "kv_namespaces": [{ "binding": "SESSION", "id": "ee50e4c5962045d1829366d4615abde7" }],
+    // Separate queue, so a preview never consumes production jobs
+    "queues": {
+      "producers": [{ "binding": "FLASHCARD_JOBS", "queue": "flashcard-generation-preview" }],
+      "consumers": [{ "queue": "flashcard-generation-preview", "max_batch_size": 1, "max_retries": 0 }],
+    },
   },
   "observability": {
     "enabled": true,

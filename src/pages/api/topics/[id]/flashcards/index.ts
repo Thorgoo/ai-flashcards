@@ -1,12 +1,9 @@
 import type { APIRoute } from "astro";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { aiResponse, getAi } from "@/lib/ai";
+import { aiAcceptedResponse, currentAiMode } from "@/lib/ai";
 import { topicErrorResponse } from "@/lib/topics/errors";
-import { claimFlashcardBatch, createFlashcardBatch, failFlashcardBatchClaim } from "@/lib/topics/flashcard-repository";
-import { buildFlashcardsRequest, toFlashcardRows, type FlashcardSubtopic } from "@/lib/topics/flashcards-task";
+import { enqueueFlashcardJob } from "@/lib/topics/flashcard-generation";
+import { claimFlashcardBatch, failFlashcardBatchClaim } from "@/lib/topics/flashcard-repository";
 import { loadTopic, readFlashcardState, readQuizState, requireSession } from "@/lib/topics/http";
-import type { QuizState } from "@/lib/topics/quiz-repository";
-import type { TopicWithSubtopics } from "@/lib/topics/repository";
 
 // The topic's flashcard batches (data: null without a batch, a claim or a failure); the page
 // reads it once a generation ends.
@@ -21,7 +18,9 @@ export const GET: APIRoute = async (context) => {
   return Response.json({ data: state });
 };
 
-// Generates the topic's first batch of 10 flashcards with AI, weighted by the quiz results.
+// Starts the topic's first batch of 10 flashcards, weighted by the quiz results: claims it and
+// queues the AI generation (src/lib/topics/flashcard-generation.ts), then answers 202 with the
+// state (`generating` set). The page polls until the batch is ready or failed, also after a reload.
 export const POST: APIRoute = async (context) => {
   const session = requireSession(context);
   if (session instanceof Response) return session;
@@ -37,51 +36,21 @@ export const POST: APIRoute = async (context) => {
   const claimed = await claimFlashcardBatch(session.supabase, found.topic.id);
   if (!claimed.ok) return topicErrorResponse(claimed.code);
 
-  // A reload or a closed tab cancels the request; waitUntil lets the paid-for generation
-  // finish and be saved, and the reloaded page polls GET until it is ready.
-  const work = generateFlashcards(session.supabase, session.user, found, quiz, claimed.value);
-  // The adapter types cfContext as ExecutionContext, which this project's types do not
-  // include; it is absent outside the Workers runtime.
-  const cf = context.locals.cfContext as { waitUntil(promise: Promise<unknown>): void } | undefined;
-  cf?.waitUntil(work);
-  return await work;
-};
-
-async function generateFlashcards(
-  supabase: SupabaseClient,
-  user: User,
-  found: TopicWithSubtopics,
-  quiz: QuizState,
-  claimedAt: string,
-): Promise<Response> {
-  const { topic } = found;
-  // Subtopics come in list order; one without a quiz result counts as 0%.
-  const percents = new Map((quiz.results ?? []).map((row) => [row.subtopicId, row.percent]));
-  const subtopics: FlashcardSubtopic[] = found.subtopics.map((subtopic) => ({
-    id: subtopic.id,
-    name: subtopic.name,
-    contentType: subtopic.contentType,
-    percent: percents.get(subtopic.id) ?? 0,
-  }));
-
-  const ai = getAi(supabase, user);
-  const result = await ai.call(buildFlashcardsRequest(topic, subtopics));
-  // A failure is kept on the claim, so the page shows it also after a reload.
-  if (!result.ok) {
-    await failFlashcardBatchClaim(supabase, topic.id, 1, claimedAt, result.error.code);
-    return aiResponse(result, ai.mode);
+  const queued = await enqueueFlashcardJob(session.supabase, {
+    kind: "first",
+    topicId: found.topic.id,
+    seq: 1,
+    claimedAt: claimed.value,
+    userId: session.user.id,
+  });
+  if (!queued.ok) {
+    // Kept on the claim, so the page shows it also after a reload.
+    await failFlashcardBatchClaim(session.supabase, found.topic.id, 1, claimed.value, queued.code);
+    return topicErrorResponse(queued.code);
   }
 
-  const rows = toFlashcardRows(result.data, subtopics);
-  const created = await createFlashcardBatch(supabase, topic.id, rows, claimedAt);
-  if (!created.ok) {
-    // A claim taken over by another request is not ours; the function leaves it as it is.
-    await failFlashcardBatchClaim(supabase, topic.id, 1, claimedAt, created.code);
-    return topicErrorResponse(created.code);
-  }
-
-  const state = await readFlashcardState(supabase, topic.id);
+  const state = await readFlashcardState(session.supabase, found.topic.id);
   if (state instanceof Response) return state;
   if (!state) return topicErrorResponse("save_failed");
-  return aiResponse({ ok: true, data: state, remaining: result.remaining }, ai.mode);
-}
+  return aiAcceptedResponse(state, currentAiMode());
+};
