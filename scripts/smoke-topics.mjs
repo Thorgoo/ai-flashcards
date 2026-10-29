@@ -1,7 +1,7 @@
 // Smoke test of the topic flow as a signed-in user: create a topic, generate (AI_MODE=fake),
 // edit, regenerate, confirm, the lock, the quiz, the first flashcard batch, the study session
-// (A/B/C/D answers, open answers graded by AI), another account, and the daily generation limit
-// against the real PostgREST. OAuth cannot run in CI, so test accounts are created with the
+// (A/B/C/D answers, open answers graded by AI), the next batch, another account, and the daily
+// generation limit against the real PostgREST. OAuth cannot run in CI, so test accounts are created with the
 // local Supabase admin API and signed in with a password; @supabase/ssr writes the session
 // cookies exactly as the app reads them.
 // CI only (needs a local Supabase): BASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.
@@ -44,6 +44,23 @@ async function gradings(userId) {
     .eq("kind", "grading");
   if (error) throw new Error(`counting gradings failed: ${error.message}`);
   return count;
+}
+
+// The account's AI generations so far (ai_calls rows of kind 'generation').
+async function generationCalls(userId) {
+  const { count, error } = await admin
+    .from("ai_calls")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("kind", "generation");
+  if (error) throw new Error(`counting generations failed: ${error.message}`);
+  return count;
+}
+
+// Marks cards mastered, standing in for weeks of correct answers (as makeDue does for days).
+async function master(ids) {
+  const { error } = await admin.from("flashcards").update({ stage: "mastered" }).in("id", ids);
+  if (error) throw new Error(`mastering cards failed: ${error.message}`);
 }
 
 // Copy of batchAllocation in src/lib/topics/flashcards-task.ts (node cannot import the TS
@@ -289,13 +306,13 @@ try {
   const percentOf = new Map(results.map((row) => [row.subtopicId, row.percent]));
   const expected = batchAllocation(confirmed.map((subtopic) => percentOf.get(subtopic.id) ?? 0));
   r = await api(`${topic}/flashcards`, { cookie: a.cookie });
-  const cards = r.json?.data?.cards ?? [];
+  const cards = r.json?.data?.batches?.[0]?.cards ?? [];
   const perSubtopic = confirmed.map((subtopic) => cards.filter((card) => card.subtopicId === subtopic.id).length);
   check(
     "generate the first flashcard batch (fake AI) split by the quiz results",
     r.status === 200 &&
       r.headers.get("X-AI-Mode") === "fake" &&
-      r.json?.data?.batch?.status === "ready" &&
+      r.json?.data?.batches?.length === 1 &&
       cards.length === BATCH_SIZE &&
       confirmed.length > 0 &&
       perSubtopic.every((count) => count >= 1) &&
@@ -310,8 +327,8 @@ try {
   check(
     "delete a flashcard",
     r.status === 200 &&
-      r.json?.data?.cards?.length === BATCH_SIZE - 1 &&
-      !r.json.data.cards.some((item) => item.id === card),
+      r.json?.data?.batches?.[0]?.cards?.length === BATCH_SIZE - 1 &&
+      !r.json.data.batches[0].cards.some((item) => item.id === card),
     describe(r),
   );
   r = await api(`${topic}/flashcards/${card}`, { method: "DELETE", cookie: a.cookie });
@@ -498,16 +515,103 @@ try {
   r = await open("Odpowiadam poprawnie.", randomUUID(), b.cookie);
   check("another account cannot give an open answer", r.status === 404, describe(r));
 
-  // Four generations used so far (generate, regenerate, quiz, flashcards; the study session
-  // calls no AI and grading has its own limit); refused calls must not count.
+  // Next flashcard batches (S-07): batch 2 unlocks at 80% of batch 1 mastered and covers only
+  // the subtopics not mastered yet; every refusal comes before the AI call.
+  const next = `${topic}/flashcards/next`;
+  let calls = await generationCalls(a.userId);
+  r = await api(next, { body: { seq: 2 }, cookie: a.cookie });
+  check(
+    "the next batch is locked before 80% of the current one is mastered",
+    r.status === 409 && r.json?.error?.code === "next_batch_locked" && (await generationCalls(a.userId)) === calls,
+    describe(r),
+  );
+  r = await api(next, { body: { seq: 1 }, cookie: a.cookie });
+  check(
+    "a next batch number below 2 is refused",
+    r.status === 400 && r.json?.error?.code === "validation_failed",
+    describe(r),
+  );
+
+  // State set up with the service key (as makeDue): master enough batch-1 cards to reach the
+  // threshold, keeping one card of the subtopic with the most cards unmastered, so that
+  // subtopic stays unmastered and the others are mastered.
+  r = await api(`${topic}/flashcards`, { method: "GET", cookie: a.cookie });
+  const batchOne = r.json?.data?.batches?.[0]?.cards ?? [];
+  const cardsOf = (id, list) => list.filter((item) => item.subtopicId === id);
+  const largest = [...confirmed].sort((x, y) => cardsOf(y.id, batchOne).length - cardsOf(x.id, batchOne).length)[0];
+  const kept = cardsOf(largest?.id, batchOne).find((item) => !item.mastered);
+  const required = Math.ceil((batchOne.length * 4) / 5);
+  const toMaster = batchOne.filter((item) => !item.mastered && item.id !== kept?.id);
+  if (!kept || batchOne.length - 1 < required) throw new Error(`cannot set up the threshold: ${describe(r)}`);
+  await master(toMaster.map((item) => item.id));
+  // Mastered: has cards and every one is mastered (src/lib/topics/mastery.ts).
+  const masteredIds = confirmed
+    .filter((subtopic) => {
+      const own = cardsOf(subtopic.id, batchOne);
+      return own.length > 0 && own.every((item) => item.id !== kept.id);
+    })
+    .map((subtopic) => subtopic.id);
+  const unmasteredIds = confirmed.map((subtopic) => subtopic.id).filter((id) => !masteredIds.includes(id));
+
+  r = await api(next, { body: { seq: 2 }, cookie: a.cookie });
+  const batchTwo = r.json?.data?.batches?.[0];
+  const newCards = batchTwo?.cards ?? [];
+  check(
+    "generate batch 2 (fake AI) for the unmastered subtopics only",
+    r.status === 200 &&
+      r.headers.get("X-AI-Mode") === "fake" &&
+      r.json?.data?.batches?.length === 2 &&
+      batchTwo?.seq === 2 &&
+      newCards.length === BATCH_SIZE &&
+      masteredIds.length > 0 &&
+      !newCards.some((item) => masteredIds.includes(item.subtopicId)) &&
+      unmasteredIds.every((id) => cardsOf(id, newCards).length >= 1) &&
+      r.json?.remaining === GENERATION_LIMIT - 5,
+    `${describe(r)}; mastered ${JSON.stringify(masteredIds)}, unmastered ${JSON.stringify(unmasteredIds)}`,
+  );
+  r = await api(next, { body: { seq: 2 }, cookie: a.cookie });
+  check("a retried batch 2 is batch_exists", r.status === 409 && r.json?.error?.code === "batch_exists", describe(r));
+
+  r = await api(`${topic}/flashcards`, { method: "GET", cookie: a.cookie });
+  const allCards = (r.json?.data?.batches ?? []).flatMap((batch) => batch.cards);
+  const progress = r.json?.data?.subtopics ?? [];
+  check(
+    "the flashcard state lists both batches with per-subtopic mastery",
+    r.status === 200 &&
+      r.json?.data?.batches?.length === 2 &&
+      r.json.data.batches[0].seq === 2 &&
+      progress.length === confirmed.length &&
+      progress.every(
+        (row) =>
+          row.total === cardsOf(row.id, allCards).length &&
+          row.mastered === cardsOf(row.id, allCards).filter((item) => item.mastered).length &&
+          row.isMastered === masteredIds.includes(row.id),
+      ) &&
+      r.json?.data?.topicMastered === false,
+    describe(r),
+  );
+  r = await api(next, { body: { seq: 3 }, cookie: b.cookie });
+  check("another account cannot generate a next batch", r.status === 404, describe(r));
+
+  await master(allCards.map((item) => item.id));
+  calls = await generationCalls(a.userId);
+  r = await api(next, { body: { seq: 3 }, cookie: a.cookie });
+  check(
+    "a mastered topic gets no next batch and no AI call",
+    r.status === 409 && r.json?.error?.code === "topic_mastered" && (await generationCalls(a.userId)) === calls,
+    describe(r),
+  );
+
+  // Five generations used so far (generate, regenerate, quiz, flashcards, batch 2; the study
+  // session calls no AI and grading has its own limit); refused calls must not count.
   const generations = [];
-  for (let i = 5; i <= GENERATION_LIMIT + 1; i++) {
+  for (let i = 6; i <= GENERATION_LIMIT + 1; i++) {
     generations.push(await api(`${draft}/generate`, { cookie: a.cookie }));
   }
   const lastAllowed = generations.at(-2);
   const refused = generations.at(-1);
   check(
-    `generations 5-${GENERATION_LIMIT} are allowed`,
+    `generations 6-${GENERATION_LIMIT} are allowed`,
     generations.slice(0, -1).every((res) => res.status === 200) && lastAllowed?.json?.remaining === 0,
     lastAllowed ? describe(lastAllowed) : "no results",
   );

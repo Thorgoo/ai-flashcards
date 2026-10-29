@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import type { FlashcardState, FlashcardView } from "@/lib/topics/flashcard-repository";
+import type { FlashcardBatchView, FlashcardState, FlashcardView } from "@/lib/topics/flashcard-repository";
 import { callApi, type ApiError } from "./api";
 import { Confirmation } from "./Confirmation";
 import { GeneratingNotice } from "./GeneratingNotice";
@@ -19,7 +19,7 @@ interface Props {
   dueCount: number | null;
 }
 
-type Busy = "generate" | "delete" | null;
+type Busy = "generate" | "next" | "delete" | null;
 
 const LETTERS = ["A", "B", "C", "D"];
 const POLL_MS = 2000;
@@ -32,10 +32,10 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
   const base = `/api/topics/${topicId}/flashcards`;
 
   // State always comes from the server's answer; a failure keeps the current cards.
-  async function run(kind: Exclude<Busy, null>, path: string, method: string) {
+  async function run(kind: Exclude<Busy, null>, path: string, method: string, body?: unknown) {
     setBusy(kind);
     setError(null);
-    const result = await callApi<FlashcardState | null>(path, method);
+    const result = await callApi<FlashcardState | null>(path, method, body);
     setBusy(null);
     if (result.ok) {
       setState(result.data);
@@ -46,7 +46,7 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
       await refresh();
       return;
     }
-    setError({ error: result.error, retry: () => void run(kind, path, method) });
+    setError({ error: result.error, retry: () => void run(kind, path, method, body) });
   }
 
   async function refresh() {
@@ -55,6 +55,7 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
   }
 
   const generate = () => void run("generate", base, "POST");
+  const generateNext = (seq: number) => void run("next", `${base}/next`, "POST", { seq });
   const remove = (cardId: string) => void run("delete", `${base}/${cardId}`, "DELETE");
 
   useEffect(() => {
@@ -67,12 +68,16 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const generating = busy === "generate" || state?.batch.status === "generating";
+  const batches = state?.batches ?? [];
+  const ready = batches.length > 0;
+  // Batch 1 hides the page until it is ready; a later batch keeps the ready ones visible.
+  const generatingFirst = busy === "generate" || (Boolean(state?.generating) && !ready);
+  const generatingNext = busy === "next" || (Boolean(state?.generating) && ready);
 
   // A generation started before a reload, or in another tab, finishes on the server; poll
   // until the batch is ready (or its claim expires and reads as no batch).
   useEffect(() => {
-    if (state?.batch.status !== "generating" || busy !== null) return;
+    if (!state?.generating || busy !== null) return;
     const timer = window.setInterval(() => void refresh(), POLL_MS);
     return () => {
       window.clearInterval(timer);
@@ -92,8 +97,10 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
       </a>
       <h1 className="text-2xl font-semibold">Fiszki</h1>
 
-      {generating ? (
+      {generatingFirst ? (
         <GeneratingNotice label="AI przygotowuje fiszki…" />
+      ) : generatingNext ? (
+        <GeneratingNotice label="AI przygotowuje kolejną partię…" />
       ) : (
         error && (
           <Alert variant="destructive">
@@ -109,7 +116,7 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
         )
       )}
 
-      {generating ? null : state === null ? (
+      {generatingFirst ? null : state === null ? (
         <div className="border-border space-y-3 rounded-lg border p-6">
           <p>
             Partia ma 10 fiszek z podtematów tego tematu. Więcej fiszek dostaną podtematy, które w quizie poszły Ci
@@ -120,37 +127,40 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
             Wygeneruj fiszki
           </Button>
         </div>
-      ) : state.cards.length === 0 ? (
-        <p className="border-border text-muted-foreground rounded-lg border p-6 text-center">
-          Ta partia nie ma już fiszek.
-        </p>
       ) : (
-        <div aria-busy={busy !== null} className="space-y-6">
-          <p className="text-muted-foreground text-sm">Fiszki w partii: {state.cards.length}</p>
-          {groupBySubtopic(state.cards).map((group) => (
-            <section key={group[0].subtopicId} className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="min-w-0 text-lg font-semibold break-words">{group[0].subtopicName}</h2>
-                <Badge variant="outline">{CONTENT_TYPE_LABELS[group[0].contentType]}</Badge>
-              </div>
-              <ul className="space-y-3">
-                {group.map((card) => (
-                  <FlashcardItem
-                    key={card.id}
-                    card={card}
-                    disabled={busy !== null}
-                    onDelete={() => {
-                      remove(card.id);
-                    }}
-                  />
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+        <>
+          <NextBatchPanel
+            state={state}
+            generating={generatingNext}
+            disabled={busy !== null}
+            onGenerate={generateNext}
+          />
+          <div aria-busy={busy !== null} className="space-y-6">
+            {batches.map((batch, index) =>
+              index === 0 ? (
+                <section key={batch.id} className="space-y-4">
+                  <h2 className="text-lg font-semibold">{batchTitle(batch)}</h2>
+                  <BatchCards cards={batch.cards} disabled={busy !== null} onDelete={remove} />
+                </section>
+              ) : (
+                <Collapsible key={batch.id} className="space-y-4">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" className="group h-auto w-full justify-start whitespace-normal">
+                      <ChevronDown className="transition-transform group-data-[state=open]:rotate-180" />
+                      <span className="min-w-0 text-left break-words">{batchTitle(batch)}</span>
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <BatchCards cards={batch.cards} disabled={busy !== null} onDelete={remove} />
+                  </CollapsibleContent>
+                </Collapsible>
+              ),
+            )}
+          </div>
+        </>
       )}
 
-      {!generating && state?.batch.status === "ready" && (
+      {!generatingFirst && ready && (
         <Button asChild>
           <a href={`/topics/${topicId}/study`}>
             <GraduationCap />
@@ -158,6 +168,89 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
           </a>
         </Button>
       )}
+    </div>
+  );
+}
+
+function batchTitle(batch: FlashcardBatchView): string {
+  const mastered = batch.cards.filter((card) => card.mastered).length;
+  return `Partia ${batch.seq} (opanowane ${mastered}/${batch.cards.length})`;
+}
+
+// Progress of the newest batch and the entry to the next one (S-07).
+function NextBatchPanel(props: {
+  state: FlashcardState;
+  generating: boolean;
+  disabled: boolean;
+  onGenerate: (seq: number) => void;
+}) {
+  const { current, topicMastered } = props.state;
+  if (!current) return null;
+  const missing = Math.max(current.required - current.mastered, 0);
+  // Why the button is off; null when it can start the next batch.
+  const reason = props.generating
+    ? "Kolejna partia jest w przygotowaniu."
+    : topicMastered
+      ? "Wszystkie podtematy są opanowane, więc kolejna partia nie jest potrzebna."
+      : !current.unlocked
+        ? `Opanuj jeszcze ${missing} z fiszek partii ${current.seq}, aby odblokować kolejną partię.`
+        : null;
+  return (
+    <div className="border-border bg-card space-y-3 rounded-lg border p-4">
+      <p className="font-medium break-words">
+        {topicMastered
+          ? "Temat opanowany — wszystkie podtematy opanowane"
+          : `Opanowane w partii ${current.seq}: ${current.mastered}/${current.total} — kolejna partia od ${current.required}`}
+      </p>
+      <Button
+        disabled={props.disabled || reason !== null}
+        aria-describedby={reason ? "next-batch-reason" : undefined}
+        onClick={() => {
+          props.onGenerate(current.seq + 1);
+        }}
+      >
+        <Layers />
+        Wygeneruj kolejną partię
+      </Button>
+      {reason && (
+        <p id="next-batch-reason" className="text-muted-foreground text-sm">
+          {reason}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function BatchCards(props: { cards: FlashcardView[]; disabled: boolean; onDelete: (cardId: string) => void }) {
+  if (props.cards.length === 0) {
+    return (
+      <p className="border-border text-muted-foreground rounded-lg border p-6 text-center">
+        Ta partia nie ma już fiszek.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-6">
+      {groupBySubtopic(props.cards).map((group) => (
+        <section key={group[0].subtopicId} className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="min-w-0 text-lg font-semibold break-words">{group[0].subtopicName}</h3>
+            <Badge variant="outline">{CONTENT_TYPE_LABELS[group[0].contentType]}</Badge>
+          </div>
+          <ul className="space-y-3">
+            {group.map((card) => (
+              <FlashcardItem
+                key={card.id}
+                card={card}
+                disabled={props.disabled}
+                onDelete={() => {
+                  props.onDelete(card.id);
+                }}
+              />
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }
@@ -177,7 +270,10 @@ function FlashcardItem(props: { card: FlashcardView; disabled: boolean; onDelete
   const { card } = props;
   return (
     <li className="border-border bg-card space-y-3 rounded-lg border p-3">
-      <p className="font-medium break-words">{card.front}</p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <p className="min-w-0 font-medium break-words">{card.front}</p>
+        {card.mastered && <Badge variant="secondary">Opanowana</Badge>}
+      </div>
       <ul className="space-y-1 text-sm">
         {card.options.map((option, i) => {
           const correct = i === card.correctIndex;

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { SubtopicMastery } from "@/lib/topics/mastery";
 import type { Subtopic, TopicWithSubtopics } from "@/lib/topics/repository";
 import { CONTENT_TYPES, SUBTOPIC_NAME_MAX, SUBTOPICS_MAX, SUBTOPICS_MIN, type ContentType } from "@/lib/topics/schemas";
 import { callApi, type ApiError } from "./api";
@@ -28,11 +29,22 @@ interface Props {
   hasFlashcards: boolean;
   // The study entry once the batch is ready (null hides it); dueCount is null when counting failed.
   study: { dueCount: number | null } | null;
+  // Flashcard mastery per subtopic once a batch is ready (null before it or when the read failed).
+  mastery: SubtopicMastery[] | null;
+  topicMastered: boolean;
 }
 
 type Busy = "generate" | "save" | null;
 
-export default function TopicEditor({ initial, autoGenerate, quiz, hasFlashcards, study }: Props) {
+export default function TopicEditor({
+  initial,
+  autoGenerate,
+  quiz,
+  hasFlashcards,
+  study,
+  mastery,
+  topicMastered,
+}: Props) {
   const [state, setState] = useState(initial);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<{ error: ApiError; retry: () => void } | null>(null);
@@ -102,6 +114,8 @@ export default function TopicEditor({ initial, autoGenerate, quiz, hasFlashcards
           quiz={quiz}
           hasFlashcards={hasFlashcards}
           study={study}
+          mastery={mastery}
+          topicMastered={topicMastered}
         />
       ) : subtopics.length === 0 ? (
         busy !== "generate" && (
@@ -288,22 +302,43 @@ function ConfirmedList(props: {
   quiz: QuizSummary | null;
   hasFlashcards: boolean;
   study: Props["study"];
+  mastery: Props["mastery"];
+  topicMastered: boolean;
 }) {
-  const { subtopics, quiz, study } = props;
+  const { subtopics, quiz, study, mastery } = props;
+  const masteryById = new Map((mastery ?? []).map((entry) => [entry.id, entry]));
   const quizPath = `/topics/${props.topicId}/quiz`;
   const flashcardsPath = `/topics/${props.topicId}/flashcards`;
   return (
     <>
+      {mastery && props.topicMastered && (
+        <p className="border-border bg-card rounded-lg border p-3 font-medium">
+          Temat opanowany — wszystkie podtematy opanowane
+        </p>
+      )}
       <ul className="space-y-2">
-        {subtopics.map((subtopic) => (
-          <li
-            key={subtopic.id}
-            className="border-border bg-card flex items-center justify-between gap-3 rounded-lg border p-3"
-          >
-            <span className="min-w-0 break-words">{subtopic.name}</span>
-            <Badge variant="outline">{CONTENT_TYPE_LABELS[subtopic.contentType]}</Badge>
-          </li>
-        ))}
+        {subtopics.map((subtopic) => {
+          const own = masteryById.get(subtopic.id);
+          return (
+            <li
+              key={subtopic.id}
+              className="border-border bg-card flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+            >
+              <div className="min-w-0 space-y-1">
+                <p className="break-words">{subtopic.name}</p>
+                {own && (
+                  <p className="text-muted-foreground text-sm">
+                    Opanowane {own.mastered}/{own.total}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {own?.isMastered && <Badge variant="secondary">Opanowany</Badge>}
+                <Badge variant="outline">{CONTENT_TYPE_LABELS[subtopic.contentType]}</Badge>
+              </div>
+            </li>
+          );
+        })}
       </ul>
       <p className="text-muted-foreground text-sm">Lista jest zatwierdzona i nie można jej już zmienić.</p>
       <div className="flex flex-wrap gap-2">

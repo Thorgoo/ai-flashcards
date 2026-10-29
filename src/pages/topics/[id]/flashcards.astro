@@ -3,7 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import FlashcardBatch from "@/components/topics/FlashcardBatch";
 import { createClient } from "@/lib/supabase";
-import { getFlashcardState, type FlashcardState } from "@/lib/topics/flashcard-repository";
+import { getFlashcardState, hasReadyBatch, type FlashcardState } from "@/lib/topics/flashcard-repository";
 import { getQuizState } from "@/lib/topics/quiz-repository";
 import { getTopic } from "@/lib/topics/repository";
 import { isUuid } from "@/lib/topics/schemas";
@@ -36,7 +36,7 @@ if (supabase && found && !blocked) {
 }
 // A failed count still shows "Ucz się", only without the number; the batch itself is fine.
 let dueCount: number | null = null;
-if (supabase && found && state?.batch.status === "ready") {
+if (supabase && found && hasReadyBatch(state)) {
   try {
     dueCount = await countDueCards(supabase, found.topic.id);
   } catch (error) {

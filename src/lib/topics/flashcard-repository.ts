@@ -1,6 +1,7 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import type { TopicErrorCode } from "./errors";
 import { FLASHCARD_CLAIM_TTL_SECONDS, type FlashcardRow } from "./flashcards-task";
+import { batchProgress, subtopicMastery, type BatchProgress, type SubtopicMastery } from "./mastery";
 import type { RepoResult } from "./repository";
 import type { ContentType } from "./schemas";
 
@@ -16,12 +17,26 @@ export interface FlashcardView {
   explanation: string;
   // Example sentence of a vocabulary card; null for conceptual cards.
   example: string | null;
+  // The card reached the 'mastered' stage (S-06); mastery is counted from cards only.
+  mastered: boolean;
 }
 
-// "generating": batch 1 is claimed and its AI call is still running; it has no cards yet.
-export interface FlashcardState {
-  batch: { id: string; status: "generating" | "ready" };
+export interface FlashcardBatchView {
+  id: string;
+  seq: number;
   cards: FlashcardView[];
+}
+
+export interface FlashcardState {
+  // Ready batches, newest first.
+  batches: FlashcardBatchView[];
+  // A batch claimed and still being generated (its AI call is running); it has no cards yet.
+  generating: { seq: number } | null;
+  // Progress of the newest ready batch toward unlocking the next one.
+  current: ({ seq: number } & BatchProgress) | null;
+  // Every subtopic of the topic, in list order.
+  subtopics: SubtopicMastery[];
+  topicMastered: boolean;
 }
 
 // Shared with study-repository.ts, which reads the same cards for the study session.
@@ -46,7 +61,17 @@ export interface SubtopicRow {
   position: number;
 }
 
-export function toFlashcardView(card: CardRow, subtopic: SubtopicRow | undefined): FlashcardView {
+interface BatchRow {
+  id: string;
+  seq: number;
+  status: "generating" | "ready";
+  claimed_at: string;
+}
+
+type StateCardRow = CardRow & { batch_id: string; stage: string };
+
+// `stage` is read where the query selects it; without it the card counts as not mastered.
+export function toFlashcardView(card: CardRow & { stage?: string }, subtopic: SubtopicRow | undefined): FlashcardView {
   return {
     id: card.id,
     subtopicId: card.subtopic_id,
@@ -58,7 +83,13 @@ export function toFlashcardView(card: CardRow, subtopic: SubtopicRow | undefined
     correctIndex: card.correct_index,
     explanation: card.explanation,
     example: card.example,
+    mastered: card.stage === "mastered",
   };
+}
+
+// Whether the topic has at least one ready batch (pages: study, "Ucz się").
+export function hasReadyBatch(state: FlashcardState | null): boolean {
+  return (state?.batches.length ?? 0) > 0;
 }
 
 const P0409_REASONS: TopicErrorCode[] = [
@@ -66,9 +97,12 @@ const P0409_REASONS: TopicErrorCode[] = [
   "quiz_not_completed",
   "batch_exists",
   "batch_generating",
+  "next_batch_locked",
+  "topic_mastered",
 ];
 
-// The flashcard functions share P0409 and name the reason in the hint (migration create_flashcards).
+// The flashcard functions share P0409 and name the reason in the hint (migrations
+// create_flashcards, next_flashcard_batches). batch_not_claimed is not the user's doing.
 function errorCode(error: PostgrestError): TopicErrorCode {
   const reason = P0409_REASONS.find((code) => code === error.hint);
   if (error.code === "P0409" && reason) return reason;
@@ -77,48 +111,68 @@ function errorCode(error: PostgrestError): TopicErrorCode {
   return "save_failed";
 }
 
-// The topic's first batch, or null without one. Throws on database errors (see
-// readFlashcardState in http.ts).
+// All batches of the topic, or null without a ready batch or a fresh claim. Throws on
+// database errors (see readFlashcardState in http.ts).
 export async function getFlashcardState(supabase: SupabaseClient, topicId: string): Promise<FlashcardState | null> {
-  const batchResult = await supabase
-    .from("flashcard_batches")
-    .select("id, status, claimed_at")
-    .eq("topic_id", topicId)
-    .eq("seq", 1)
-    .maybeSingle<{ id: string; status: "generating" | "ready"; claimed_at: string }>();
-  if (batchResult.error) {
-    throw new Error(`loading flashcard batch failed: ${batchResult.error.message}`);
-  }
-  if (!batchResult.data) {
-    return null;
-  }
-  const batch = batchResult.data;
-  if (batch.status === "generating") {
-    // An abandoned claim reads as no batch: the next start takes it over.
-    if (Date.now() - Date.parse(batch.claimed_at) > FLASHCARD_CLAIM_TTL_SECONDS * 1000) return null;
-    return { batch: { id: batch.id, status: "generating" }, cards: [] };
-  }
-
-  const [cardsResult, subtopicsResult] = await Promise.all([
-    supabase.from("flashcards").select(CARD_COLUMNS).eq("batch_id", batch.id),
+  const [batchesResult, cardsResult, subtopicsResult] = await Promise.all([
+    supabase.from("flashcard_batches").select("id, seq, status, claimed_at").eq("topic_id", topicId),
+    supabase.from("flashcards").select(`${CARD_COLUMNS}, batch_id, stage`).eq("topic_id", topicId),
     supabase.from("subtopics").select("id, name, content_type, position").eq("topic_id", topicId),
   ]);
+  if (batchesResult.error) {
+    throw new Error(`loading flashcard batches failed: ${batchesResult.error.message}`);
+  }
   if (cardsResult.error) {
     throw new Error(`loading flashcards failed: ${cardsResult.error.message}`);
   }
   if (subtopicsResult.error) {
     throw new Error(`loading subtopics failed: ${subtopicsResult.error.message}`);
   }
-  const subtopics = new Map((subtopicsResult.data as SubtopicRow[]).map((row) => [row.id, row]));
+
+  const batchRows = batchesResult.data as BatchRow[];
+  const ready = batchRows.filter((batch) => batch.status === "ready").sort((a, b) => b.seq - a.seq);
+  // An abandoned claim reads as no batch: the next start takes it over.
+  const fresh = batchRows
+    .filter(
+      (batch) =>
+        batch.status === "generating" &&
+        Date.now() - Date.parse(batch.claimed_at) <= FLASHCARD_CLAIM_TTL_SECONDS * 1000,
+    )
+    .sort((a, b) => b.seq - a.seq)
+    .at(0);
+  if (ready.length === 0 && !fresh) {
+    return null;
+  }
+
+  const subtopicRows = (subtopicsResult.data as SubtopicRow[]).sort((a, b) => a.position - b.position);
+  const subtopics = new Map(subtopicRows.map((row) => [row.id, row]));
   const subtopicPosition = (id: string) => subtopics.get(id)?.position ?? Number.MAX_SAFE_INTEGER;
 
   // Grouped by subtopic in list order, then in the order the cards were generated.
-  const cards = (cardsResult.data as CardRow[]).sort(
+  const cardRows = (cardsResult.data as unknown as StateCardRow[]).sort(
     (a, b) => subtopicPosition(a.subtopic_id) - subtopicPosition(b.subtopic_id) || a.position - b.position,
   );
+  const cardsByBatch = new Map<string, FlashcardView[]>();
+  for (const card of cardRows) {
+    const view = toFlashcardView(card, subtopics.get(card.subtopic_id));
+    const list = cardsByBatch.get(card.batch_id);
+    if (list) list.push(view);
+    else cardsByBatch.set(card.batch_id, [view]);
+  }
+
+  const batches = ready.map((batch) => ({ id: batch.id, seq: batch.seq, cards: cardsByBatch.get(batch.id) ?? [] }));
+  const mastery = subtopicMastery(
+    subtopicRows.map((row) => ({ id: row.id, name: row.name, contentType: row.content_type })),
+    batches.flatMap((batch) => batch.cards),
+  );
+  const latest = batches.at(0);
   return {
-    batch: { id: batch.id, status: "ready" },
-    cards: cards.map((card) => toFlashcardView(card, subtopics.get(card.subtopic_id))),
+    batches,
+    generating: fresh ? { seq: fresh.seq } : null,
+    current: latest ? { seq: latest.seq, ...batchProgress(latest.cards) } : null,
+    subtopics: mastery,
+    // As claim_next_flashcard_batch: no subtopic left without cards or with an unmastered card.
+    topicMastered: mastery.every((subtopic) => subtopic.isMastered),
   };
 }
 
@@ -156,6 +210,53 @@ export async function createFlashcardBatch(
 ): Promise<RepoResult<null>> {
   const { error } = await supabase.rpc("create_flashcard_batch", {
     p_topic_id: topicId,
+    p_cards: rows,
+    p_claimed_at: claimedAt,
+  });
+  return error ? { ok: false, code: errorCode(error) } : { ok: true, value: null };
+}
+
+// Reserves batch `seq` (2 and later) before the AI call. claim_next_flashcard_batch repeats the
+// unlock and mastery checks under a lock; the value is the claim's token, as in claimFlashcardBatch.
+export async function claimNextFlashcardBatch(
+  supabase: SupabaseClient,
+  topicId: string,
+  seq: number,
+): Promise<RepoResult<string>> {
+  const claim = await supabase.rpc("claim_next_flashcard_batch", { p_topic_id: topicId, p_seq: seq });
+  return claim.error ? { ok: false, code: errorCode(claim.error) } : { ok: true, value: claim.data as string };
+}
+
+// Drops the unfinished claim of batch `seq` named by its token, so the batch can start again.
+export async function releaseNextFlashcardBatchClaim(
+  supabase: SupabaseClient,
+  topicId: string,
+  seq: number,
+  claimedAt: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("release_next_flashcard_batch_claim", {
+    p_topic_id: topicId,
+    p_seq: seq,
+    p_claimed_at: claimedAt,
+  });
+  if (error) {
+    // The claim expires on its own (FLASHCARD_CLAIM_TTL_SECONDS); the original error matters more.
+    // eslint-disable-next-line no-console
+    console.error("[topics] releasing next flashcard claim failed", error);
+  }
+}
+
+// Atomic: batch `seq` is marked ready with all 10 cards, or nothing is saved (create_next_flashcard_batch).
+export async function createNextFlashcardBatch(
+  supabase: SupabaseClient,
+  topicId: string,
+  seq: number,
+  rows: FlashcardRow[],
+  claimedAt: string,
+): Promise<RepoResult<null>> {
+  const { error } = await supabase.rpc("create_next_flashcard_batch", {
+    p_topic_id: topicId,
+    p_seq: seq,
     p_cards: rows,
     p_claimed_at: claimedAt,
   });

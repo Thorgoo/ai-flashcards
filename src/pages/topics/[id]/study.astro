@@ -3,7 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import StudySession from "@/components/topics/StudySession";
 import { createClient } from "@/lib/supabase";
-import { getFlashcardState } from "@/lib/topics/flashcard-repository";
+import { getFlashcardState, hasReadyBatch } from "@/lib/topics/flashcard-repository";
 import { getQuizState } from "@/lib/topics/quiz-repository";
 import { getTopic } from "@/lib/topics/repository";
 import { isUuid } from "@/lib/topics/schemas";
@@ -26,7 +26,7 @@ if (supabase && found && !blocked) {
     const quiz = await getQuizState(supabase, found.topic.id);
     if (!quiz?.quiz.completedAt) {
       blocked = "Najpierw ukończ quiz diagnostyczny";
-    } else if ((await getFlashcardState(supabase, found.topic.id))?.batch.status !== "ready") {
+    } else if (!hasReadyBatch(await getFlashcardState(supabase, found.topic.id))) {
       blocked = "Najpierw wygeneruj fiszki";
       noBatch = true;
     } else {

@@ -12,6 +12,7 @@
 - Only `answer_flashcard_choice` and `answer_flashcard_open` change a card's study columns (`stage`, `due_on`, …). Never update them from TS or a new policy.
 - Open answers: every check (`readOpenAttempt`) runs before the AI grading, and a retried `attemptId` returns the stored result without AI (`@../../pages/api/topics/[id]/study/answer.ts`). `answer_flashcard_open` trusts the caller's verdict, so it is not a security boundary — only the account's own schedule.
 - Every answer is one `flashcard_answers` row; the client's `attemptId` is the idempotency key, so a retry reuses it (`@../../components/topics/StudySession.tsx`).
+- `@mastery.ts` mirrors `claim_next_flashcard_batch` (the 80% unlock and what a mastered subtopic is); change both together. A subtopic's mastery counts its flashcards only, never the quiz.
 - "Today" is the Europe/Warsaw date: `@study-day.ts` for reads, the database for writes.
 - Deleting a card sets `flashcard_answers.flashcard_id` to null and keeps the answer; only deleting the topic or the account removes the log.
 

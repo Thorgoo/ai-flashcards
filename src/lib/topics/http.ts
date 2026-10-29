@@ -69,7 +69,7 @@ export async function readQuizState(supabase: SupabaseClient, topicId: string): 
   }
 }
 
-// The topic's first flashcard batch (null without one), or the error response if reading fails.
+// The topic's flashcard batches (null without one), or the error response if reading fails.
 export async function readFlashcardState(
   supabase: SupabaseClient,
   topicId: string,
