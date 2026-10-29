@@ -5,6 +5,7 @@ import { FLASHCARD_CLAIM_TTL_SECONDS, type FlashcardRow } from "./flashcards-tas
 import { batchProgress, subtopicMastery, type BatchProgress, type SubtopicMastery } from "./mastery";
 import type { RepoResult } from "./repository";
 import type { ContentType } from "./schemas";
+import { warsawToday } from "./study-day";
 
 export interface FlashcardView {
   id: string;
@@ -206,7 +207,7 @@ async function readStateRows<Card extends SummaryCardRow>(
     .filter((batch) => batch.status === "ready")
     .sort((a, b) => b.seq - a.seq)
     .map((batch) => ({ id: batch.id, seq: batch.seq }));
-  // An abandoned claim reads as no batch: the next start takes it over (as the database, at 120 s).
+  // An abandoned claim reads as no batch: the next start takes it over (as the database, at 180 s).
   const fresh = batchRows
     .filter(
       (batch) =>
@@ -231,12 +232,9 @@ async function readStateRows<Card extends SummaryCardRow>(
   return { ready, fresh, failed, cards, subtopicRows, subtopics };
 }
 
-// Null without a ready batch, a fresh claim or a failed batch.
-function summarize(rows: StateRows<SummaryCardRow>): FlashcardSummary | null {
-  const { ready, fresh, failed } = rows;
-  if (ready.length === 0 && !fresh && !failed) {
-    return null;
-  }
+// Null without a ready batch, a fresh claim or a failed batch still worth showing.
+function summarize(rows: StateRows<SummaryCardRow>, now: Date = new Date()): FlashcardSummary | null {
+  const { ready, fresh } = rows;
   const readyIds = new Set(ready.map((batch) => batch.id));
   const cards = rows.cards
     .filter((card) => readyIds.has(card.batch_id))
@@ -246,15 +244,39 @@ function summarize(rows: StateRows<SummaryCardRow>): FlashcardSummary | null {
     cards,
   );
   const latest = ready.at(0);
+  const current = latest
+    ? { seq: latest.seq, ...batchProgress(cards.filter((card) => card.batchId === latest.id)) }
+    : null;
+  // As claim_next_flashcard_batch: no subtopic left without cards or with an unmastered card.
+  const topicMastered = mastery.every((subtopic) => subtopic.isMastered);
+  const failed = visibleFailure(rows.failed, current, topicMastered, now);
+  if (ready.length === 0 && !fresh && !failed) {
+    return null;
+  }
   return {
     readyBatches: ready.length,
     generating: fresh ? { seq: fresh.seq } : null,
-    failed: failed ? { seq: failed.seq, error: batchError(failed.error_code) } : null,
-    current: latest ? { seq: latest.seq, ...batchProgress(cards.filter((card) => card.batchId === latest.id)) } : null,
+    failed,
+    current,
     subtopics: mastery,
-    // As claim_next_flashcard_batch: no subtopic left without cards or with an unmastered card.
-    topicMastered: mastery.every((subtopic) => subtopic.isMastered),
+    topicMastered,
   };
+}
+
+// A stored failure shows only while its retry can still succeed: not once the topic is mastered
+// or the batch it was for is locked again, and a non-retryable one (the daily limit) only on the
+// Europe/Warsaw day it happened (claimed_at, within the AI timeout of the failure).
+function visibleFailure(
+  row: BatchRow | undefined,
+  current: FlashcardSummary["current"],
+  topicMastered: boolean,
+  now: Date,
+): FlashcardSummary["failed"] {
+  if (!row) return null;
+  if (row.seq > 1 && (topicMastered || !current?.unlocked)) return null;
+  const error = batchError(row.error_code);
+  if (!error.retryable && warsawToday(new Date(row.claimed_at)) !== warsawToday(now)) return null;
+  return { seq: row.seq, error };
 }
 
 // The status and claim token of batch `seq`, or null without the row (the queue consumer checks
@@ -284,23 +306,6 @@ export async function claimFlashcardBatch(supabase: SupabaseClient, topicId: str
   return claim.error ? { ok: false, code: errorCode(claim.error) } : { ok: true, value: claim.data as string };
 }
 
-// Drops an unfinished claim after a failed AI call or save, so the batch can start again.
-export async function releaseFlashcardBatchClaim(
-  supabase: SupabaseClient,
-  topicId: string,
-  claimedAt: string,
-): Promise<void> {
-  const { error } = await supabase.rpc("release_flashcard_batch_claim", {
-    p_topic_id: topicId,
-    p_claimed_at: claimedAt,
-  });
-  if (error) {
-    // The claim expires on its own (FLASHCARD_CLAIM_TTL_SECONDS); the original error matters more.
-    // eslint-disable-next-line no-console
-    console.error("[topics] releasing flashcard claim failed", error);
-  }
-}
-
 // Marks the claim of batch `seq` (1 and later) named by its token failed with the error code, so
 // the page shows the reason, also after a reload; the next claim takes it over at once. A ready
 // batch or a claim taken over by another request is left as it is (fail_flashcard_batch_claim).
@@ -310,7 +315,7 @@ export async function failFlashcardBatchClaim(
   seq: number,
   claimedAt: string,
   code: string,
-): Promise<void> {
+): Promise<boolean> {
   const { error } = await supabase.rpc("fail_flashcard_batch_claim", {
     p_topic_id: topicId,
     p_seq: seq,
@@ -322,6 +327,8 @@ export async function failFlashcardBatchClaim(
     // eslint-disable-next-line no-console
     console.error("[topics] failing flashcard claim failed", error);
   }
+  // False when the failure could not be stored, so the page will not show it.
+  return !error;
 }
 
 // Atomic: the batch is marked ready with all 10 cards, or nothing is saved (create_flashcard_batch).
@@ -348,25 +355,6 @@ export async function claimNextFlashcardBatch(
 ): Promise<RepoResult<string>> {
   const claim = await supabase.rpc("claim_next_flashcard_batch", { p_topic_id: topicId, p_seq: seq });
   return claim.error ? { ok: false, code: errorCode(claim.error) } : { ok: true, value: claim.data as string };
-}
-
-// Drops the unfinished claim of batch `seq` named by its token, so the batch can start again.
-export async function releaseNextFlashcardBatchClaim(
-  supabase: SupabaseClient,
-  topicId: string,
-  seq: number,
-  claimedAt: string,
-): Promise<void> {
-  const { error } = await supabase.rpc("release_next_flashcard_batch_claim", {
-    p_topic_id: topicId,
-    p_seq: seq,
-    p_claimed_at: claimedAt,
-  });
-  if (error) {
-    // The claim expires on its own (FLASHCARD_CLAIM_TTL_SECONDS); the original error matters more.
-    // eslint-disable-next-line no-console
-    console.error("[topics] releasing next flashcard claim failed", error);
-  }
 }
 
 // Atomic: batch `seq` is marked ready with all 10 cards, or nothing is saved (create_next_flashcard_batch).

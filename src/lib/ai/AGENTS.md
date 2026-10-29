@@ -6,6 +6,7 @@
 - An endpoint returns the result with `aiResponse` from `@response.ts`; the error codes, Polish messages and `retryable` flags are defined once in `@errors.ts`. Do not invent new error shapes.
 - Do not add retries (SDK or loops). Every call uses up the user's limit, so only the user retries.
 - A call that can run past 30 s must not run under `ctx.waitUntil`, which Cloudflare cuts ~30 s after the client disconnects. Run it in the queue consumer with the user's forwarded access token (`@../topics/flashcard-generation.ts`, `src/worker.ts`), keep `max_retries: 0`, and store failures on the claim.
+- A queue message carries the user's access token: never log message bodies, and never add a dead-letter queue or message logging without dropping `accessToken` first.
 
 ## Adding an AI task (slices)
 

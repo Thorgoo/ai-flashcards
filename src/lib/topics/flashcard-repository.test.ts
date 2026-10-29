@@ -5,6 +5,7 @@ import { batchError, getFlashcardSummary, hasFlashcards } from "./flashcard-repo
 const TOPIC = "00000000-0000-0000-0000-0000000000a1";
 const NOW = new Date().toISOString();
 const OLD = new Date(Date.now() - 121_000).toISOString();
+const YESTERDAY = new Date(Date.now() - 24 * 3600_000).toISOString();
 
 interface Batch {
   id: string;
@@ -14,11 +15,17 @@ interface Batch {
   error_code: string | null;
 }
 
+interface Card {
+  batch_id: string;
+  subtopic_id: string;
+  stage: string;
+}
+
 // Answers the three reads of getFlashcardSummary (batches, cards, subtopics) from fixed rows.
-function client(batches: Batch[]): SupabaseClient {
+function client(batches: Batch[], cards: Card[] = []): SupabaseClient {
   const tables: Record<string, unknown[]> = {
     flashcard_batches: batches,
-    flashcards: [],
+    flashcards: cards,
     subtopics: [{ id: "s1", name: "S1", content_type: "conceptual", position: 0 }],
   };
   return {
@@ -105,5 +112,49 @@ describe("getFlashcardSummary failures", () => {
       TOPIC,
     );
     expect(summary).toMatchObject({ readyBatches: 1, failed: null });
+  });
+
+  it("hides a failed next batch once the topic is mastered", async () => {
+    const summary = await getFlashcardSummary(
+      client(
+        [
+          { id: "b1", seq: 1, status: "ready", claimed_at: OLD, error_code: null },
+          { id: "b2", seq: 2, status: "failed", claimed_at: NOW, error_code: "ai_timeout" },
+        ],
+        [{ batch_id: "b1", subtopic_id: "s1", stage: "mastered" }],
+      ),
+      TOPIC,
+    );
+    expect(summary).toMatchObject({ topicMastered: true, failed: null });
+  });
+
+  it("hides a failed next batch while that batch is locked", async () => {
+    const summary = await getFlashcardSummary(
+      client(
+        [
+          { id: "b1", seq: 1, status: "ready", claimed_at: OLD, error_code: null },
+          { id: "b2", seq: 2, status: "failed", claimed_at: NOW, error_code: "ai_timeout" },
+        ],
+        [{ batch_id: "b1", subtopic_id: "s1", stage: "learning" }],
+      ),
+      TOPIC,
+    );
+    expect(summary).toMatchObject({ current: { unlocked: false }, failed: null });
+  });
+
+  it("drops a non-retryable failure from an earlier day", async () => {
+    const summary = await getFlashcardSummary(
+      client([{ id: "b1", seq: 1, status: "failed", claimed_at: YESTERDAY, error_code: "quota_exceeded" }]),
+      TOPIC,
+    );
+    expect(summary).toBeNull();
+  });
+
+  it("keeps a retryable failure from an earlier day", async () => {
+    const summary = await getFlashcardSummary(
+      client([{ id: "b1", seq: 1, status: "failed", claimed_at: YESTERDAY, error_code: "ai_timeout" }]),
+      TOPIC,
+    );
+    expect(summary).toMatchObject({ failed: { seq: 1, error: { code: "ai_timeout" } } });
   });
 });

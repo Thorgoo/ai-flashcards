@@ -94,7 +94,7 @@ select throws_ok(
 );
 
 reset role;
-update public.flashcard_batches set claimed_at = now() - interval '121 seconds'
+update public.flashcard_batches set claimed_at = now() - interval '181 seconds'
 where topic_id = '00000000-0000-0000-0000-0000000000a1' and seq = 2;
 set local role authenticated;
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
@@ -102,11 +102,11 @@ set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", 
 select is(
   public.claim_next_flashcard_batch('00000000-0000-0000-0000-0000000000a1', 2),
   now(),
-  'an abandoned claim of batch 2 (older than 120 s) is taken over and returns its new token'
+  'an abandoned claim of batch 2 (older than 180 s) is taken over and returns its new token'
 );
 select lives_ok(
   $$ select public.release_next_flashcard_batch_claim(
-       '00000000-0000-0000-0000-0000000000a1', 2, now() - interval '121 seconds') $$,
+       '00000000-0000-0000-0000-0000000000a1', 2, now() - interval '181 seconds') $$,
   'releasing with the abandoned token runs without error'
 );
 select is(
@@ -142,7 +142,7 @@ select results_eq(
 );
 select lives_ok(
   $$ select public.fail_flashcard_batch_claim(
-       '00000000-0000-0000-0000-0000000000a1', 2, now() - interval '121 seconds', 'ai_timeout') $$,
+       '00000000-0000-0000-0000-0000000000a1', 2, now() - interval '181 seconds', 'ai_timeout') $$,
   'failing with the abandoned token runs without error'
 );
 select results_eq(
@@ -169,7 +169,7 @@ select throws_ok(
 select is(
   public.claim_next_flashcard_batch('00000000-0000-0000-0000-0000000000a1', 2),
   now(),
-  'a failed batch 2 is claimed again within 120 s'
+  'a failed batch 2 is claimed again within 180 s'
 );
 select results_eq(
   $$ select status, error_code from public.flashcard_batches where seq = 2 $$,
@@ -180,7 +180,7 @@ select results_eq(
 -- Refused saves.
 select throws_ok(
   $$ select public.create_next_flashcard_batch(
-       '00000000-0000-0000-0000-0000000000a1', 2, current_setting('test.cards')::jsonb, now() - interval '121 seconds') $$,
+       '00000000-0000-0000-0000-0000000000a1', 2, current_setting('test.cards')::jsonb, now() - interval '181 seconds') $$,
   'P0409',
   'batch_not_claimed',
   'an abandoned token cannot fill the new claim'

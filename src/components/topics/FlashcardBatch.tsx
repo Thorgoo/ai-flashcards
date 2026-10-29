@@ -48,17 +48,21 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
       setState(result.data);
       return;
     }
-    // Another tab (or the request before a reload) changed the batches: show the current state.
+    // Another tab (or the request before a reload) changed the batches, or a generation was queued
+    // before the answer failed: show the current state.
     const { code } = result.error;
-    if (STALE_CODES.includes(code)) await refresh();
+    const current = STALE_CODES.includes(code) || kind !== "delete" ? await refresh() : undefined;
     // A batch generating or finished elsewhere needs no message; a lock or a mastered topic does.
-    if (code === "batch_generating" || code === "batch_exists") return;
+    if (code === "batch_generating" || code === "batch_exists" || current?.generating) return;
     setError({ error: result.error, retry: () => void run(kind, path, method, body) });
   }
 
-  async function refresh() {
+  // The current state, or undefined when it could not be read (the page keeps its state).
+  async function refresh(): Promise<FlashcardState | null | undefined> {
     const result = await callApi<FlashcardState | null>(base, "GET");
-    if (result.ok) setState(result.data);
+    if (!result.ok) return undefined;
+    setState(result.data);
+    return result.data;
   }
 
   // Polls the small summary; the cards are read once the generation has ended.

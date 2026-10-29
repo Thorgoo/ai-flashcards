@@ -6,7 +6,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(59);
+select plan(60);
 
 insert into auth.users (id, email)
 values
@@ -171,7 +171,7 @@ select throws_ok(
 select is(
   public.claim_flashcard_batch('00000000-0000-0000-0000-0000000000a1'),
   now(),
-  'a failed batch is claimed again within 120 s'
+  'a failed batch is claimed again within 180 s'
 );
 select results_eq(
   $$ select status, error_code from public.flashcard_batches $$,
@@ -184,10 +184,23 @@ update public.flashcard_batches set claimed_at = now() - interval '121 seconds'
 where topic_id = '00000000-0000-0000-0000-0000000000a1';
 set local role authenticated;
 
+-- The queue consumer's AI call may take 90 s plus delivery and the save (migration flashcard_claim_ttl_180).
+select throws_ok(
+  $$ select public.claim_flashcard_batch('00000000-0000-0000-0000-0000000000a1') $$,
+  'P0409',
+  'batch_generating',
+  'a claim 121 s old is still running and cannot be claimed again'
+);
+
+reset role;
+update public.flashcard_batches set claimed_at = now() - interval '181 seconds'
+where topic_id = '00000000-0000-0000-0000-0000000000a1';
+set local role authenticated;
+
 select is(
   public.claim_flashcard_batch('00000000-0000-0000-0000-0000000000a1'),
   now(),
-  'an abandoned claim (older than 120 s) is taken over and returns its token'
+  'an abandoned claim (older than 180 s) is taken over and returns its token'
 );
 select is(
   (select claimed_at from public.flashcard_batches where topic_id = '00000000-0000-0000-0000-0000000000a1'),
@@ -197,13 +210,13 @@ select is(
 
 -- The abandoned request's token no longer matches (migration claim_tokens_and_option_nulls).
 select lives_ok(
-  $$ select public.release_flashcard_batch_claim('00000000-0000-0000-0000-0000000000a1', now() - interval '121 seconds') $$,
+  $$ select public.release_flashcard_batch_claim('00000000-0000-0000-0000-0000000000a1', now() - interval '181 seconds') $$,
   'releasing with the abandoned token runs without error'
 );
 select is((select count(*) from public.flashcard_batches), 1::bigint, 'an abandoned token does not release the new claim');
 select throws_ok(
   $$ select public.create_flashcard_batch(
-       '00000000-0000-0000-0000-0000000000a1', current_setting('test.cards')::jsonb, now() - interval '121 seconds') $$,
+       '00000000-0000-0000-0000-0000000000a1', current_setting('test.cards')::jsonb, now() - interval '181 seconds') $$,
   'P0409',
   'batch_not_claimed',
   'an abandoned token cannot fill the new claim'
