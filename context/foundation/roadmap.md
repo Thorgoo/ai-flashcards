@@ -49,7 +49,7 @@ Osoba ucząca się zawodowo kilku tematów naraz zdobywa wiedzę ad-hoc (np. w r
 | S-04 | first-weak-subtopic-batch       | user can dostać partię fiszek z najsłabszych podtematów, czytać „więcej” i usuwać złe fiszki                                              | S-03          | US-01, FR-011, FR-012, FR-013, FR-028                                 | done        |
 | S-05 | multiple-choice-study-session   | user can uczyć się zaległych fiszek w formacie A/B/C/D z natychmiastowym sprawdzeniem i harmonogramem powrotów                            | S-04          | US-01, FR-014, FR-015                                                 | done        |
 | S-06 | ai-graded-open-answers          | user can odpowiadać otwarcie, dostać ocenę AI i opanować fiszkę po dwóch poprawnych odpowiedziach w różne dni                             | S-05          | US-01, FR-015, FR-016, FR-017, FR-018, FR-028                         | done        |
-| S-07 | next-batch-and-subtopic-mastery | user can zobaczyć opanowanie per podtemat i po 80% partii wygenerować kolejną ze słabych, nieopanowanych podtematów                       | S-06          | US-01, FR-019, FR-020                                                 | in-progress |
+| S-07 | next-batch-and-subtopic-mastery | user can zobaczyć opanowanie per podtemat i po 80% partii wygenerować kolejną ze słabych, nieopanowanych podtematów                       | S-06          | US-01, FR-019, FR-020                                                 | done        |
 | S-08 | home-screen-and-topic-archive   | user can zobaczyć ekran główny z zaległymi fiszkami i datą ostatniej sesji per temat oraz zmienić nazwę, zarchiwizować i przywrócić temat | S-05          | FR-007, FR-021                                                        | proposed    |
 | S-09 | daily-streak                    | user can widzieć licznik serii dni nauki                                                                                                  | S-05          | FR-023                                                                | proposed    |
 | S-10 | badges                          | user can zdobywać odznaki za serię dni, opanowanie tematu i liczbę opanowanych fiszek oraz je przeglądać                                  | S-07, S-09    | FR-024, FR-025, FR-026, FR-027                                        | proposed    |
@@ -197,7 +197,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Domyka pętlę z kryterium sukcesu; zależy od poprawnie liczonego opanowania z S-06, więc nie może iść wcześniej.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-08: Ekran główny i archiwizacja tematów
 
@@ -288,3 +288,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-04: user can dostać partię 10 fiszek wygenerowanych z najsłabszych podtematów (podtemat ze 100% w quizie też dostaje mniejszą partię), w kształcie zależnym od typu treści, z rozszerzonym wyjaśnieniem pod „czytaj więcej” zapisanym razem z fiszką, przejrzeć je i usunąć niechciane.** — Archived 2026-10-25 → `context/archive/2026-10-24-first-weak-subtopic-batch/`. Lesson: —.
 - **S-05: user can rozpocząć sesję nauki tematu, zobaczyć tylko zaległe i nieopanowane fiszki, odpowiadać A/B/C/D ze sprawdzeniem natychmiastowym, przy czym błędna wraca w tej samej sesji, a poprawna przechodzi do formatu otwartego i wraca następnego dnia; sesja jest w pełni używalna na telefonie.** — Archived 2026-10-28 → `context/archive/2026-10-25-multiple-choice-study-session/`. Lesson: —.
 - **S-06: user can odpowiedzieć 2–3 zdaniami na fiszkę w formacie otwartym, dostać ocenę AI poprawna/błędna, po błędzie zobaczyć poprawną odpowiedź i reset licznika (bez powrotu do A/B/C/D), a po dwóch poprawnych odpowiedziach w różne dni mieć fiszkę opanowaną; przy błędzie oceny wpisana odpowiedź zostaje i można ją wysłać ponownie.** — Archived 2026-10-29 → `context/archive/2026-10-28-ai-graded-open-answers/`. Lesson: —.
+- **S-07: user can zobaczyć opanowanie per podtemat (opanowany = wszystkie jego fiszki ze wszystkich partii opanowane) i po opanowaniu 80% bieżącej partii wygenerować przyciskiem kolejną partię dla tego lub następnego najsłabszego nieopanowanego podtematu, z pominięciem opanowanych.** — Archived 2026-10-29 → `context/archive/2026-10-29-next-batch-and-subtopic-mastery/`. Lesson: —.
