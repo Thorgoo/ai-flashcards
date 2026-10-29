@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addSubtopicInput, createTopicInput, studyAnswerInput, updateSubtopicInput } from "./schemas";
+import { addSubtopicInput, createTopicInput, nextBatchInput, studyAnswerInput, updateSubtopicInput } from "./schemas";
 
 describe("createTopicInput", () => {
   it("trims the name and turns an empty scope note into null", () => {
@@ -74,5 +74,19 @@ describe("studyAnswerInput", () => {
     expect(
       studyAnswerInput.safeParse({ format: "choice", cardId, answer: 0, answerText: "Odpowiedź", attemptId }).success,
     ).toBe(false);
+  });
+});
+
+describe("nextBatchInput", () => {
+  it("accepts a batch number from 2", () => {
+    expect(nextBatchInput.parse({ seq: 2 })).toEqual({ seq: 2 });
+    expect(nextBatchInput.safeParse({ seq: 7 }).success).toBe(true);
+  });
+
+  it("rejects batch 1, fractions, strings and a missing number", () => {
+    expect(nextBatchInput.safeParse({ seq: 1 }).success).toBe(false);
+    expect(nextBatchInput.safeParse({ seq: 2.5 }).success).toBe(false);
+    expect(nextBatchInput.safeParse({ seq: "2" }).success).toBe(false);
+    expect(nextBatchInput.safeParse({}).success).toBe(false);
   });
 });

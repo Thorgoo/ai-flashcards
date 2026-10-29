@@ -342,22 +342,22 @@ Strona fiszek z wieloma partiami, postępem i przyciskiem kolejnej partii; opano
 
 #### Automated
 
-- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (`mastery.test.ts`, `flashcards-task.test.ts`)
-- [x] 2.2 Kontrola typów i build przechodzą: `npm run build`
-- [x] 2.3 Lint przechodzi: `npm run lint`
-- [ ] 2.4 Istniejący `smoke-topics.mjs` (partia 1, nauka) nadal przechodzi w CI
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (`mastery.test.ts`, `flashcards-task.test.ts`) — 9477935
+- [x] 2.2 Kontrola typów i build przechodzą: `npm run build` — 9477935
+- [x] 2.3 Lint przechodzi: `npm run lint` — 9477935
+- [x] 2.4 Istniejący `smoke-topics.mjs` (partia 1, nauka) nadal przechodzi w CI — 9477935
 
 #### Manual
 
-- [x] 2.5 Przegląd promptu `flashcards-next`: dane użytkownika i istniejące pytania tylko w tagach przez `asData`, polecenie o nowych zagadnieniach zrozumiałe
+- [x] 2.5 Przegląd promptu `flashcards-next`: dane użytkownika i istniejące pytania tylko w tagach przez `asData`, polecenie o nowych zagadnieniach zrozumiałe — 9477935
 
 ### Phase 3: API
 
 #### Automated
 
-- [ ] 3.1 Testy jednostkowe przechodzą: `npm test` (w tym `schemas.test.ts`)
-- [ ] 3.2 Kontrola typów i build przechodzą: `npm run build`
-- [ ] 3.3 Lint przechodzi: `npm run lint`
+- [x] 3.1 Testy jednostkowe przechodzą: `npm test` (w tym `schemas.test.ts`)
+- [x] 3.2 Kontrola typów i build przechodzą: `npm run build`
+- [x] 3.3 Lint przechodzi: `npm run lint`
 - [ ] 3.4 Rozszerzony `smoke-topics.mjs` przechodzi w CI
 
 #### Manual
