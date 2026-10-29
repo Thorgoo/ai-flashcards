@@ -2,17 +2,14 @@ import type { APIRoute } from "astro";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { aiResponse, getAi } from "@/lib/ai";
 import { topicErrorResponse } from "@/lib/topics/errors";
-import {
-  claimFlashcardBatch,
-  createFlashcardBatch,
-  releaseFlashcardBatchClaim,
-} from "@/lib/topics/flashcard-repository";
+import { claimFlashcardBatch, createFlashcardBatch, failFlashcardBatchClaim } from "@/lib/topics/flashcard-repository";
 import { buildFlashcardsRequest, toFlashcardRows, type FlashcardSubtopic } from "@/lib/topics/flashcards-task";
 import { loadTopic, readFlashcardState, readQuizState, requireSession } from "@/lib/topics/http";
 import type { QuizState } from "@/lib/topics/quiz-repository";
 import type { TopicWithSubtopics } from "@/lib/topics/repository";
 
-// The topic's flashcard batches (data: null without one); the page reads it once a generation ends.
+// The topic's flashcard batches (data: null without a batch, a claim or a failure); the page
+// reads it once a generation ends.
 export const GET: APIRoute = async (context) => {
   const session = requireSession(context);
   if (session instanceof Response) return session;
@@ -69,15 +66,17 @@ async function generateFlashcards(
 
   const ai = getAi(supabase, user);
   const result = await ai.call(buildFlashcardsRequest(topic, subtopics));
+  // A failure is kept on the claim, so the page shows it also after a reload.
   if (!result.ok) {
-    await releaseFlashcardBatchClaim(supabase, topic.id, claimedAt);
+    await failFlashcardBatchClaim(supabase, topic.id, 1, claimedAt, result.error.code);
     return aiResponse(result, ai.mode);
   }
 
   const rows = toFlashcardRows(result.data, subtopics);
   const created = await createFlashcardBatch(supabase, topic.id, rows, claimedAt);
   if (!created.ok) {
-    await releaseFlashcardBatchClaim(supabase, topic.id, claimedAt);
+    // A claim taken over by another request is not ours; the function leaves it as it is.
+    await failFlashcardBatchClaim(supabase, topic.id, 1, claimedAt, created.code);
     return topicErrorResponse(created.code);
   }
 

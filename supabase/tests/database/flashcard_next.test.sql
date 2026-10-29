@@ -2,11 +2,12 @@
 -- after its latest ready batch, once that batch has at least 80% of its existing cards
 -- mastered (mastered * 5 >= total * 4) and while the topic has an unmastered subtopic (no
 -- cards, or a card not mastered); then it is filled like batch 1, with a required token.
--- Mastery and deleted cards are set up as the table owner.
+-- Mastery and deleted cards are set up as the table owner. A failed claim is taken over by the
+-- next claim at once (migration flashcard_batch_failures).
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(30);
+select plan(41);
 
 insert into auth.users (id, email)
 values
@@ -127,6 +128,55 @@ select is(
   'another account does not release A''s claim'
 );
 
+-- A failed claim of batch 2 (migration flashcard_batch_failures); the claim's token is now().
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
+select lives_ok(
+  $$ select public.fail_flashcard_batch_claim('00000000-0000-0000-0000-0000000000a1', 2, now(), 'ai_timeout') $$,
+  'another account''s fail of batch 2 runs without error'
+);
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
+select results_eq(
+  $$ select status, error_code from public.flashcard_batches where seq = 2 $$,
+  $$ values ('generating'::text, null::text) $$,
+  'another account does not fail A''s claim of batch 2'
+);
+select lives_ok(
+  $$ select public.fail_flashcard_batch_claim(
+       '00000000-0000-0000-0000-0000000000a1', 2, now() - interval '121 seconds', 'ai_timeout') $$,
+  'failing with the abandoned token runs without error'
+);
+select results_eq(
+  $$ select status, error_code from public.flashcard_batches where seq = 2 $$,
+  $$ values ('generating'::text, null::text) $$,
+  'an abandoned token does not fail the new claim'
+);
+select lives_ok(
+  $$ select public.fail_flashcard_batch_claim('00000000-0000-0000-0000-0000000000a1', 2, now(), 'ai_invalid_output') $$,
+  'the owner fails the claim of batch 2 with its token'
+);
+select results_eq(
+  $$ select seq, status, error_code from public.flashcard_batches order by seq $$,
+  $$ values (1, 'ready'::text, null::text), (2, 'failed'::text, 'ai_invalid_output'::text) $$,
+  'only batch 2 is failed, with its error code'
+);
+select throws_ok(
+  $$ select public.create_next_flashcard_batch(
+       '00000000-0000-0000-0000-0000000000a1', 2, current_setting('test.cards')::jsonb, now()) $$,
+  'P0409',
+  'batch_not_claimed',
+  'a failed batch 2 cannot be saved'
+);
+select is(
+  public.claim_next_flashcard_batch('00000000-0000-0000-0000-0000000000a1', 2),
+  now(),
+  'a failed batch 2 is claimed again within 120 s'
+);
+select results_eq(
+  $$ select status, error_code from public.flashcard_batches where seq = 2 $$,
+  $$ values ('generating'::text, null::text) $$,
+  'claiming a failed batch 2 clears its error code'
+);
+
 -- Refused saves.
 select throws_ok(
   $$ select public.create_next_flashcard_batch(
@@ -163,6 +213,15 @@ select results_eq(
      where b.seq = 2 group by b.seq, b.status $$,
   $$ values (2, 'ready'::text, 10::bigint, 10::bigint) $$,
   'the filled claim is a ready batch 2 with 10 new multiple-choice cards'
+);
+select lives_ok(
+  $$ select public.fail_flashcard_batch_claim('00000000-0000-0000-0000-0000000000a1', 2, now(), 'save_failed') $$,
+  'failing a ready batch 2 runs without error'
+);
+select results_eq(
+  $$ select status, error_code from public.flashcard_batches where seq = 2 $$,
+  $$ values ('ready'::text, null::text) $$,
+  'fail does not touch a ready batch 2'
 );
 
 -- Numbering.

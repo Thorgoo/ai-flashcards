@@ -3,7 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import QuizRunner from "@/components/topics/QuizRunner";
 import { createClient } from "@/lib/supabase";
-import { getFlashcardSummary } from "@/lib/topics/flashcard-repository";
+import { getFlashcardSummary, hasFlashcards as hasBatch } from "@/lib/topics/flashcard-repository";
 import { getQuizState } from "@/lib/topics/quiz-repository";
 import { getTopic } from "@/lib/topics/repository";
 import { isUuid } from "@/lib/topics/schemas";
@@ -23,7 +23,7 @@ const autoStart = confirmed && state === null && Astro.url.searchParams.get("sta
 let hasFlashcards = false;
 if (supabase && found && state?.quiz.completedAt) {
   try {
-    hasFlashcards = (await getFlashcardSummary(supabase, found.topic.id)) !== null;
+    hasFlashcards = hasBatch(await getFlashcardSummary(supabase, found.topic.id));
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("[topics] reading flashcards failed", error);

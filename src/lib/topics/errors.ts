@@ -54,7 +54,24 @@ const errors: Record<TopicErrorCode, { message: string; retryable: boolean; stat
   save_failed: { message: "Nie udało się zapisać zmian. Spróbuj ponownie.", retryable: true, status: 500 },
 };
 
+export interface TopicError {
+  code: TopicErrorCode;
+  message: string;
+  retryable: boolean;
+}
+
+// Whether a stored code (flashcard_batches.error_code) names a topic error.
+export function isTopicErrorCode(code: string): code is TopicErrorCode {
+  return Object.hasOwn(errors, code);
+}
+
+// The error body of topicErrorResponse, for an error stored in state rather than answered.
+export function topicError(code: TopicErrorCode): TopicError {
+  const { message, retryable } = errors[code];
+  return { code, message, retryable };
+}
+
 export function topicErrorResponse(code: TopicErrorCode): Response {
-  const { message, retryable, status } = errors[code];
-  return Response.json({ error: { code, message, retryable } }, { status });
+  const { status } = errors[code];
+  return Response.json({ error: topicError(code) }, { status });
 }

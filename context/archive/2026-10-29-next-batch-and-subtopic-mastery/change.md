@@ -1,10 +1,10 @@
 ---
 change_id: next-batch-and-subtopic-mastery
 title: Next batch and subtopic mastery
-status: impl_reviewed
+status: archived
 created: 2026-10-29
 updated: 2026-10-29
-archived_at: null
+archived_at: 2026-10-29T16:32:28Z
 ---
 
 ## Notes
