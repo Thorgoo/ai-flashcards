@@ -362,19 +362,19 @@ Strona fiszek z wieloma partiami, postępem i przyciskiem kolejnej partii; opano
 
 #### Manual
 
-- [ ] 3.5 Na podglądzie gałęzi z prawdziwym AI (temat testowy, fiszki opanowane kluczem serwisowym): partia 2 ma 10 sensownych fiszek, nie powtarza pytań partii 1, omija opanowany podtemat
+- [x] 3.5 Na podglądzie gałęzi z prawdziwym AI (temat testowy, fiszki opanowane kluczem serwisowym): partia 2 ma 10 sensownych fiszek, nie powtarza pytań partii 1, omija opanowany podtemat — 04ee0a2
 
 ### Phase 4: UI
 
 #### Automated
 
-- [x] 4.1 Build i typy przechodzą: `npm run build`
-- [x] 4.2 Lint przechodzi: `npm run lint`
-- [x] 4.3 Testy jednostkowe nadal przechodzą: `npm test`
+- [x] 4.1 Build i typy przechodzą: `npm run build` — 901fe75
+- [x] 4.2 Lint przechodzi: `npm run lint` — 901fe75
+- [x] 4.3 Testy jednostkowe nadal przechodzą: `npm test` — 901fe75
 
 #### Manual
 
-- [ ] 4.4 Na telefonie (produkcja, temat testowy): strona tematu pokazuje „Opanowane X/Y” i „Opanowany”; strona fiszek pokazuje postęp, zwijane starsze partie, bez poziomego przewijania
+- [x] 4.4 Na telefonie (produkcja, temat testowy): strona tematu pokazuje „Opanowane X/Y” i „Opanowany”; strona fiszek pokazuje postęp, zwijane starsze partie, bez poziomego przewijania — 901fe75
 - [ ] 4.5 Przycisk kolejnej partii wyłączony poniżej progu z wyjaśnieniem, aktywny od progu; generowanie z przeładowaniem w trakcie kończy się jedną partią i jednym zużytym generowaniem
-- [ ] 4.6 Czas generowania partii 2 na produkcji zmierzony (`ai_calls.latency_ms` dla `flashcards-next`) i zapisany w Notes `change.md`; przy > 30 s częściej niż partia 1 — wpis follow-up F1
-- [ ] 4.7 Gdy wszystkie podtematy opanowane: „Temat opanowany”, przycisk niedostępny
+- [x] 4.6 Czas generowania partii 2 na produkcji zmierzony (`ai_calls.latency_ms` dla `flashcards-next`) i zapisany w Notes `change.md`; przy > 30 s częściej niż partia 1 — wpis follow-up F1 — 901fe75
+- [x] 4.7 Gdy wszystkie podtematy opanowane: „Temat opanowany”, przycisk niedostępny — 901fe75
