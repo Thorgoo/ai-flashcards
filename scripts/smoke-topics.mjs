@@ -339,6 +339,18 @@ try {
   );
   r = await api(`${topic}/flashcards`, { method: "GET", cookie: b.cookie });
   check("another account cannot read the flashcards", r.status === 404, describe(r));
+  r = await api(`${topic}/flashcards/summary`, { method: "GET", cookie: a.cookie });
+  check(
+    "the flashcard summary counts the batch without the cards' text",
+    r.status === 200 &&
+      r.json?.data?.readyBatches === 1 &&
+      r.json.data.batches === undefined &&
+      r.json.data.current?.total === BATCH_SIZE - 1 &&
+      r.json.data.generating === null,
+    describe(r),
+  );
+  r = await api(`${topic}/flashcards/summary`, { method: "GET", cookie: b.cookie });
+  check("another account cannot read the flashcard summary", r.status === 404, describe(r));
 
   // Study session (S-05): A/B/C/D answers; it never calls AI.
   const study = `${topic}/study`;

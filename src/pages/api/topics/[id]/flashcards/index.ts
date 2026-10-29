@@ -12,7 +12,7 @@ import { loadTopic, readFlashcardState, readQuizState, requireSession } from "@/
 import type { QuizState } from "@/lib/topics/quiz-repository";
 import type { TopicWithSubtopics } from "@/lib/topics/repository";
 
-// The topic's flashcard batches (data: null without one); the page polls it while generating.
+// The topic's flashcard batches (data: null without one); the page reads it once a generation ends.
 export const GET: APIRoute = async (context) => {
   const session = requireSession(context);
   if (session instanceof Response) return session;

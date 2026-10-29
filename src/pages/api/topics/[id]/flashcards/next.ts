@@ -66,7 +66,8 @@ async function generateNextBatch(
   // The quiz result only breaks ties between equal mastery; none counts as 0%.
   const quizPercents = new Map((quiz?.results ?? []).map((row) => [row.subtopicId, row.percent]));
   const subtopics = nextBatchSubtopics(state.subtopics, quizPercents);
-  // Batches are newest first, so each subtopic's questions are too.
+  // Batches are newest first, so each subtopic's questions start with the newest batch (within
+  // a batch, in the order the cards were generated).
   const existingFronts = new Map<string, string[]>();
   for (const card of state.batches.flatMap((batch) => batch.cards)) {
     const fronts = existingFronts.get(card.subtopicId);

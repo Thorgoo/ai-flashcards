@@ -3,7 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import TopicEditor from "@/components/topics/TopicEditor";
 import { createClient } from "@/lib/supabase";
-import { getFlashcardState, hasReadyBatch } from "@/lib/topics/flashcard-repository";
+import { getFlashcardSummary, hasReadyBatch } from "@/lib/topics/flashcard-repository";
 import type { SubtopicMastery } from "@/lib/topics/mastery";
 import { getQuizState, type QuizState } from "@/lib/topics/quiz-repository";
 import { getTopic } from "@/lib/topics/repository";
@@ -48,7 +48,7 @@ let mastery: SubtopicMastery[] | null = null;
 let topicMastered = false;
 if (supabase && found && quiz?.completed) {
   try {
-    const flashcards = await getFlashcardState(supabase, found.topic.id);
+    const flashcards = await getFlashcardSummary(supabase, found.topic.id);
     hasFlashcards = flashcards !== null;
     if (flashcards && hasReadyBatch(flashcards)) {
       study = { dueCount: null };

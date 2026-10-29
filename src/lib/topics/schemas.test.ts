@@ -89,4 +89,8 @@ describe("nextBatchInput", () => {
     expect(nextBatchInput.safeParse({ seq: "2" }).success).toBe(false);
     expect(nextBatchInput.safeParse({}).success).toBe(false);
   });
+
+  it("rejects unknown keys", () => {
+    expect(nextBatchInput.safeParse({ seq: 2, topicId: "x" }).success).toBe(false);
+  });
 });
