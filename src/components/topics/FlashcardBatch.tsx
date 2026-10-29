@@ -86,9 +86,23 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
   // Batch 1 hides the page until it is ready; a later batch keeps the ready ones visible.
   const generatingFirst = busy === "generate" || (Boolean(state?.generating) && !ready);
   const generatingNext = busy === "next" || (Boolean(state?.generating) && ready);
+  // A request error of this page, else a failed generation stored on the batch (also one
+  // that ended after a reload or in another tab); a new claim clears the stored one.
+  const failed = state?.failed;
+  const shownError =
+    error ??
+    (failed
+      ? {
+          error: failed.error,
+          retry: () => {
+            if (failed.seq === 1) generate();
+            else generateNext(failed.seq);
+          },
+        }
+      : null);
 
   // A generation started before a reload, or in another tab, finishes on the server; poll
-  // until the batch is ready (or its claim expires and reads as no batch).
+  // until the batch is ready or failed (or its claim expires and reads as no batch).
   useEffect(() => {
     if (!state?.generating || busy !== null) return;
     const timer = window.setInterval(() => void poll(), POLL_MS);
@@ -115,12 +129,12 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
       ) : generatingNext ? (
         <GeneratingNotice label="AI przygotowuje kolejną partię…" />
       ) : (
-        error && (
+        shownError && (
           <Alert variant="destructive">
             <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
-              <span>{error.error.message}</span>
-              {error.error.retryable && (
-                <Button size="sm" variant="outline" onClick={error.retry}>
+              <span>{shownError.error.message}</span>
+              {shownError.error.retryable && (
+                <Button size="sm" variant="outline" onClick={shownError.retry}>
                   Spróbuj ponownie
                 </Button>
               )}
@@ -129,7 +143,7 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
         )
       )}
 
-      {generatingFirst ? null : state === null ? (
+      {generatingFirst ? null : state === null || !ready ? (
         <div className="border-border space-y-3 rounded-lg border p-6">
           <p>
             Partia ma 10 fiszek z podtematów tego tematu. Więcej fiszek dostaną podtematy, które w quizie poszły Ci

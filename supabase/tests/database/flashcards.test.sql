@@ -1,10 +1,12 @@
 -- Flashcards (migration create_flashcards): batch 1 of a confirmed topic with a completed
 -- quiz is claimed before the AI call and filled with exactly 10 cards in one transaction,
 -- each in a subtopic of that topic; owners only read the tables and delete cards.
+-- A failed claim is kept as 'failed' with its code and taken over by the next claim
+-- (migration flashcard_batch_failures).
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(45);
+select plan(59);
 
 insert into auth.users (id, email)
 values
@@ -129,6 +131,54 @@ select lives_ok(
   'a released batch can be claimed again'
 );
 
+-- A failed claim (migration flashcard_batch_failures); the claim's token is now().
+select lives_ok(
+  $$ select public.fail_flashcard_batch_claim(
+       '00000000-0000-0000-0000-0000000000a1', 1, now() - interval '1 second', 'ai_timeout') $$,
+  'failing with another token runs without error'
+);
+select results_eq(
+  $$ select status, error_code from public.flashcard_batches $$,
+  $$ values ('generating'::text, null::text) $$,
+  'another token does not fail the claim'
+);
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
+select lives_ok(
+  $$ select public.fail_flashcard_batch_claim('00000000-0000-0000-0000-0000000000a1', 1, now(), 'ai_timeout') $$,
+  'another account''s fail runs without error'
+);
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
+select results_eq(
+  $$ select status, error_code from public.flashcard_batches $$,
+  $$ values ('generating'::text, null::text) $$,
+  'another account does not fail A''s claim'
+);
+select lives_ok(
+  $$ select public.fail_flashcard_batch_claim('00000000-0000-0000-0000-0000000000a1', 1, now(), 'ai_timeout') $$,
+  'the owner fails the claim with its token after a failed AI call'
+);
+select results_eq(
+  $$ select status, error_code from public.flashcard_batches $$,
+  $$ values ('failed'::text, 'ai_timeout'::text) $$,
+  'a failed claim keeps its row with the error code'
+);
+select throws_ok(
+  $$ select public.create_flashcard_batch('00000000-0000-0000-0000-0000000000a1', current_setting('test.cards')::jsonb, now()) $$,
+  'P0409',
+  'batch_not_claimed',
+  'a failed batch cannot be saved'
+);
+select is(
+  public.claim_flashcard_batch('00000000-0000-0000-0000-0000000000a1'),
+  now(),
+  'a failed batch is claimed again within 120 s'
+);
+select results_eq(
+  $$ select status, error_code from public.flashcard_batches $$,
+  $$ values ('generating'::text, null::text) $$,
+  'claiming a failed batch clears its error code'
+);
+
 reset role;
 update public.flashcard_batches set claimed_at = now() - interval '121 seconds'
 where topic_id = '00000000-0000-0000-0000-0000000000a1';
@@ -250,6 +300,32 @@ select is(
   10::bigint,
   'release does not remove a ready batch'
 );
+select lives_ok(
+  $$ select public.fail_flashcard_batch_claim('00000000-0000-0000-0000-0000000000a1', 1, now(), 'save_failed') $$,
+  'failing a ready batch runs without error'
+);
+select results_eq(
+  $$ select status, error_code from public.flashcard_batches $$,
+  $$ values ('ready'::text, null::text) $$,
+  'fail does not touch a ready batch'
+);
+
+-- The table checks, as the table owner.
+reset role;
+select throws_ok(
+  $$ update public.flashcard_batches set status = 'cancelled' $$,
+  '23514',
+  null,
+  'a batch status is generating, ready or failed'
+);
+select throws_ok(
+  $$ update public.flashcard_batches set error_code = repeat('x', 51) $$,
+  '23514',
+  null,
+  'an error code has at most 50 characters'
+);
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
 
 -- Direct writes are refused, except deleting an own card.
 select throws_ok(
@@ -317,6 +393,10 @@ select ok(
 select ok(
   not has_function_privilege('anon', 'public.create_flashcard_batch(uuid, jsonb, timestamptz)', 'execute'),
   'anon cannot execute create_flashcard_batch'
+);
+select ok(
+  not has_function_privilege('anon', 'public.fail_flashcard_batch_claim(uuid, integer, timestamptz, text)', 'execute'),
+  'anon cannot execute fail_flashcard_batch_claim'
 );
 
 select * from finish();

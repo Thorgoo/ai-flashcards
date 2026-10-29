@@ -5,7 +5,7 @@ import { topicErrorResponse } from "@/lib/topics/errors";
 import {
   claimNextFlashcardBatch,
   createNextFlashcardBatch,
-  releaseNextFlashcardBatchClaim,
+  failFlashcardBatchClaim,
   type FlashcardState,
 } from "@/lib/topics/flashcard-repository";
 import { buildNextFlashcardsRequest, toFlashcardRows } from "@/lib/topics/flashcards-task";
@@ -77,15 +77,17 @@ async function generateNextBatch(
 
   const ai = getAi(supabase, user);
   const result = await ai.call(buildNextFlashcardsRequest(topic, subtopics, existingFronts, seq));
+  // A failure is kept on the claim, so the page shows it also after a reload.
   if (!result.ok) {
-    await releaseNextFlashcardBatchClaim(supabase, topic.id, seq, claimedAt);
+    await failFlashcardBatchClaim(supabase, topic.id, seq, claimedAt, result.error.code);
     return aiResponse(result, ai.mode);
   }
 
   const rows = toFlashcardRows(result.data, subtopics);
   const created = await createNextFlashcardBatch(supabase, topic.id, seq, rows, claimedAt);
   if (!created.ok) {
-    await releaseNextFlashcardBatchClaim(supabase, topic.id, seq, claimedAt);
+    // A claim taken over by another request is not ours; the function leaves it as it is.
+    await failFlashcardBatchClaim(supabase, topic.id, seq, claimedAt, created.code);
     return topicErrorResponse(created.code);
   }
 

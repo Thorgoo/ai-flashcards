@@ -27,6 +27,11 @@ export function aiError(code: AiErrorCode): { ok: false; error: AiError } {
   return { ok: false, error: { code, message, retryable } };
 }
 
+// Whether a stored code (flashcard_batches.error_code) names an AI error.
+export function isAiErrorCode(code: string): code is AiErrorCode {
+  return Object.hasOwn(errors, code);
+}
+
 export function aiErrorStatus(code: AiErrorCode): number {
   return errors[code].status;
 }

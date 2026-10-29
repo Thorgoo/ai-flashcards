@@ -3,7 +3,12 @@ import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import FlashcardBatch from "@/components/topics/FlashcardBatch";
 import { createClient } from "@/lib/supabase";
-import { getFlashcardState, hasReadyBatch, type FlashcardState } from "@/lib/topics/flashcard-repository";
+import {
+  getFlashcardState,
+  hasFlashcards,
+  hasReadyBatch,
+  type FlashcardState,
+} from "@/lib/topics/flashcard-repository";
 import { getQuizState } from "@/lib/topics/quiz-repository";
 import { getTopic } from "@/lib/topics/repository";
 import { isUuid } from "@/lib/topics/schemas";
@@ -44,7 +49,8 @@ if (supabase && found && hasReadyBatch(state)) {
     console.error("[topics] counting due flashcards failed", error);
   }
 }
-const autoStart = !blocked && !failed && state === null && Astro.url.searchParams.get("start") === "1";
+// A failed first batch alone starts again too (the new claim takes it over).
+const autoStart = !blocked && !failed && !hasFlashcards(state) && Astro.url.searchParams.get("start") === "1";
 ---
 
 <Layout title={found ? `Fiszki: ${found.topic.name}` : "Nie znaleziono tematu"}>
