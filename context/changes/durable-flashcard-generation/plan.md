@@ -331,11 +331,11 @@ POST now answers in well under a second (claim + enqueue + one state read). The 
 
 #### Automated
 
-- [x] 3.1 Lint passes after the doc edits: `npm run lint`
+- [x] 3.1 Lint passes after the doc edits: `npm run lint` — b5bc49b
 
 #### Manual
 
-- [x] 3.2 Production reload during batch 1 ends with the batch saved and one `ai_calls` row `ok`
+- [x] 3.2 Production reload during batch 1 ends with the batch saved and one `ai_calls` row `ok` — b5bc49b
 - [ ] 3.3 Production closed tab during batch 2 ends with the batch saved and one `ai_calls` row `ok`
-- [x] 3.4 Consumer logs show no CPU-limit errors; CPU per invocation recorded in `infrastructure.md`
-- [x] 3.5 Quiz and study flows still work on production
+- [x] 3.4 Consumer logs show no CPU-limit errors; CPU per invocation recorded in `infrastructure.md` — b5bc49b
+- [x] 3.5 Quiz and study flows still work on production — b5bc49b
