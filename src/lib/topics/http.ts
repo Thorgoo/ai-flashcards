@@ -3,7 +3,12 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { createClient } from "@/lib/supabase";
 import { topicErrorResponse } from "./errors";
-import { getFlashcardState, type FlashcardState } from "./flashcard-repository";
+import {
+  getFlashcardState,
+  getFlashcardSummary,
+  type FlashcardState,
+  type FlashcardSummary,
+} from "./flashcard-repository";
 import { getQuizState, type QuizState } from "./quiz-repository";
 import { getTopic, type TopicWithSubtopics } from "./repository";
 import { getStudySession, type StudySession } from "./study-repository";
@@ -76,6 +81,20 @@ export async function readFlashcardState(
 ): Promise<FlashcardState | null | Response> {
   try {
     return await getFlashcardState(supabase, topicId);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[topics] reading flashcards failed", error);
+    return topicErrorResponse("save_failed");
+  }
+}
+
+// As readFlashcardState without the cards' text (polling a generation).
+export async function readFlashcardSummary(
+  supabase: SupabaseClient,
+  topicId: string,
+): Promise<FlashcardSummary | null | Response> {
+  try {
+    return await getFlashcardSummary(supabase, topicId);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("[topics] reading flashcards failed", error);

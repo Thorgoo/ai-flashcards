@@ -78,7 +78,7 @@ export const studyAnswerInput = z.discriminatedUnion("format", [
 
 // The next flashcard batch to generate (2 and later; batch 1 is POST /flashcards). The client
 // sends the number it expects, so a retry after success is batch_exists, not a third batch.
-export const nextBatchInput = z.object({ seq: z.number().int().min(2) });
+export const nextBatchInput = z.object({ seq: z.number().int().min(2) }).strict();
 
 export type CreateTopicInput = z.infer<typeof createTopicInput>;
 export type AddSubtopicInput = z.infer<typeof addSubtopicInput>;

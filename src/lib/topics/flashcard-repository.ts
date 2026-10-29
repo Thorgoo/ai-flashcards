@@ -27,9 +27,10 @@ export interface FlashcardBatchView {
   cards: FlashcardView[];
 }
 
-export interface FlashcardState {
-  // Ready batches, newest first.
-  batches: FlashcardBatchView[];
+// The flashcard state without the cards' text: enough for the topic, study and quiz pages
+// and for polling a generation (getFlashcardSummary).
+export interface FlashcardSummary {
+  readyBatches: number;
   // A batch claimed and still being generated (its AI call is running); it has no cards yet.
   generating: { seq: number } | null;
   // Progress of the newest ready batch toward unlocking the next one.
@@ -37,6 +38,11 @@ export interface FlashcardState {
   // Every subtopic of the topic, in list order.
   subtopics: SubtopicMastery[];
   topicMastered: boolean;
+}
+
+export interface FlashcardState extends FlashcardSummary {
+  // Ready batches, newest first.
+  batches: FlashcardBatchView[];
 }
 
 // Shared with study-repository.ts, which reads the same cards for the study session.
@@ -70,6 +76,10 @@ interface BatchRow {
 
 type StateCardRow = CardRow & { batch_id: string; stage: string };
 
+// What the summary needs of a card; the full state reads CARD_COLUMNS on top.
+type SummaryCardRow = Pick<StateCardRow, "id" | "subtopic_id" | "position" | "batch_id" | "stage">;
+const SUMMARY_CARD_COLUMNS = "id, subtopic_id, position, batch_id, stage";
+
 // `stage` is read where the query selects it; without it the card counts as not mastered.
 export function toFlashcardView(card: CardRow & { stage?: string }, subtopic: SubtopicRow | undefined): FlashcardView {
   return {
@@ -88,8 +98,8 @@ export function toFlashcardView(card: CardRow & { stage?: string }, subtopic: Su
 }
 
 // Whether the topic has at least one ready batch (pages: study, "Ucz się").
-export function hasReadyBatch(state: FlashcardState | null): boolean {
-  return (state?.batches.length ?? 0) > 0;
+export function hasReadyBatch(state: FlashcardSummary | null): boolean {
+  return (state?.readyBatches ?? 0) > 0;
 }
 
 const P0409_REASONS: TopicErrorCode[] = [
@@ -111,12 +121,46 @@ function errorCode(error: PostgrestError): TopicErrorCode {
   return "save_failed";
 }
 
-// All batches of the topic, or null without a ready batch or a fresh claim. Throws on
-// database errors (see readFlashcardState in http.ts).
+// All batches of the topic with their cards, or null without a ready batch or a fresh claim.
+// Throws on database errors (see readFlashcardState in http.ts).
 export async function getFlashcardState(supabase: SupabaseClient, topicId: string): Promise<FlashcardState | null> {
+  const rows = await readStateRows<StateCardRow>(supabase, topicId, `${CARD_COLUMNS}, batch_id, stage`);
+  const summary = summarize(rows);
+  if (!summary) return null;
+  const cardsByBatch = new Map<string, FlashcardView[]>();
+  for (const card of rows.cards) {
+    const view = toFlashcardView(card, rows.subtopics.get(card.subtopic_id));
+    const list = cardsByBatch.get(card.batch_id);
+    if (list) list.push(view);
+    else cardsByBatch.set(card.batch_id, [view]);
+  }
+  return { ...summary, batches: rows.ready.map((batch) => ({ ...batch, cards: cardsByBatch.get(batch.id) ?? [] })) };
+}
+
+// As getFlashcardState without the cards' text; it stays small however many batches the topic has.
+export async function getFlashcardSummary(supabase: SupabaseClient, topicId: string): Promise<FlashcardSummary | null> {
+  return summarize(await readStateRows<SummaryCardRow>(supabase, topicId, SUMMARY_CARD_COLUMNS));
+}
+
+interface StateRows<Card extends SummaryCardRow> {
+  // Ready batches, newest first.
+  ready: { id: string; seq: number }[];
+  // The newest claim still within FLASHCARD_CLAIM_TTL_SECONDS.
+  fresh: BatchRow | undefined;
+  // Grouped by subtopic in list order, then in the order the cards were generated.
+  cards: Card[];
+  subtopicRows: SubtopicRow[];
+  subtopics: Map<string, SubtopicRow>;
+}
+
+async function readStateRows<Card extends SummaryCardRow>(
+  supabase: SupabaseClient,
+  topicId: string,
+  cardColumns: string,
+): Promise<StateRows<Card>> {
   const [batchesResult, cardsResult, subtopicsResult] = await Promise.all([
     supabase.from("flashcard_batches").select("id, seq, status, claimed_at").eq("topic_id", topicId),
-    supabase.from("flashcards").select(`${CARD_COLUMNS}, batch_id, stage`).eq("topic_id", topicId),
+    supabase.from("flashcards").select(cardColumns).eq("topic_id", topicId),
     supabase.from("subtopics").select("id, name, content_type, position").eq("topic_id", topicId),
   ]);
   if (batchesResult.error) {
@@ -130,46 +174,46 @@ export async function getFlashcardState(supabase: SupabaseClient, topicId: strin
   }
 
   const batchRows = batchesResult.data as BatchRow[];
-  const ready = batchRows.filter((batch) => batch.status === "ready").sort((a, b) => b.seq - a.seq);
-  // An abandoned claim reads as no batch: the next start takes it over.
+  const ready = batchRows
+    .filter((batch) => batch.status === "ready")
+    .sort((a, b) => b.seq - a.seq)
+    .map((batch) => ({ id: batch.id, seq: batch.seq }));
+  // An abandoned claim reads as no batch: the next start takes it over (as the database, at 120 s).
   const fresh = batchRows
     .filter(
       (batch) =>
-        batch.status === "generating" &&
-        Date.now() - Date.parse(batch.claimed_at) <= FLASHCARD_CLAIM_TTL_SECONDS * 1000,
+        batch.status === "generating" && Date.now() - Date.parse(batch.claimed_at) < FLASHCARD_CLAIM_TTL_SECONDS * 1000,
     )
     .sort((a, b) => b.seq - a.seq)
     .at(0);
-  if (ready.length === 0 && !fresh) {
-    return null;
-  }
-
   const subtopicRows = (subtopicsResult.data as SubtopicRow[]).sort((a, b) => a.position - b.position);
   const subtopics = new Map(subtopicRows.map((row) => [row.id, row]));
   const subtopicPosition = (id: string) => subtopics.get(id)?.position ?? Number.MAX_SAFE_INTEGER;
-
-  // Grouped by subtopic in list order, then in the order the cards were generated.
-  const cardRows = (cardsResult.data as unknown as StateCardRow[]).sort(
+  const cards = (cardsResult.data as unknown as Card[]).sort(
     (a, b) => subtopicPosition(a.subtopic_id) - subtopicPosition(b.subtopic_id) || a.position - b.position,
   );
-  const cardsByBatch = new Map<string, FlashcardView[]>();
-  for (const card of cardRows) {
-    const view = toFlashcardView(card, subtopics.get(card.subtopic_id));
-    const list = cardsByBatch.get(card.batch_id);
-    if (list) list.push(view);
-    else cardsByBatch.set(card.batch_id, [view]);
-  }
+  return { ready, fresh, cards, subtopicRows, subtopics };
+}
 
-  const batches = ready.map((batch) => ({ id: batch.id, seq: batch.seq, cards: cardsByBatch.get(batch.id) ?? [] }));
+// Null without a ready batch or a fresh claim.
+function summarize(rows: StateRows<SummaryCardRow>): FlashcardSummary | null {
+  const { ready, fresh } = rows;
+  if (ready.length === 0 && !fresh) {
+    return null;
+  }
+  const readyIds = new Set(ready.map((batch) => batch.id));
+  const cards = rows.cards
+    .filter((card) => readyIds.has(card.batch_id))
+    .map((card) => ({ subtopicId: card.subtopic_id, batchId: card.batch_id, mastered: card.stage === "mastered" }));
   const mastery = subtopicMastery(
-    subtopicRows.map((row) => ({ id: row.id, name: row.name, contentType: row.content_type })),
-    batches.flatMap((batch) => batch.cards),
+    rows.subtopicRows.map((row) => ({ id: row.id, name: row.name, contentType: row.content_type })),
+    cards,
   );
-  const latest = batches.at(0);
+  const latest = ready.at(0);
   return {
-    batches,
+    readyBatches: ready.length,
     generating: fresh ? { seq: fresh.seq } : null,
-    current: latest ? { seq: latest.seq, ...batchProgress(latest.cards) } : null,
+    current: latest ? { seq: latest.seq, ...batchProgress(cards.filter((card) => card.batchId === latest.id)) } : null,
     subtopics: mastery,
     // As claim_next_flashcard_batch: no subtopic left without cards or with an unmastered card.
     topicMastered: mastery.every((subtopic) => subtopic.isMastered),

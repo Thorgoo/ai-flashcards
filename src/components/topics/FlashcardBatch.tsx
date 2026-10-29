@@ -4,7 +4,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import type { FlashcardBatchView, FlashcardState, FlashcardView } from "@/lib/topics/flashcard-repository";
+import type {
+  FlashcardBatchView,
+  FlashcardState,
+  FlashcardSummary,
+  FlashcardView,
+} from "@/lib/topics/flashcard-repository";
 import { callApi, type ApiError } from "./api";
 import { Confirmation } from "./Confirmation";
 import { GeneratingNotice } from "./GeneratingNotice";
@@ -23,6 +28,8 @@ type Busy = "generate" | "next" | "delete" | null;
 
 const LETTERS = ["A", "B", "C", "D"];
 const POLL_MS = 2000;
+// Errors after which the page's batches are out of date.
+const STALE_CODES = ["batch_generating", "batch_exists", "next_batch_locked", "topic_mastered"];
 
 export default function FlashcardBatch({ topicId, topicName, initial, autoStart, dueCount }: Props) {
   const [state, setState] = useState(initial);
@@ -41,17 +48,23 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
       setState(result.data);
       return;
     }
-    // Another tab (or the request before a reload) is generating or already finished: show its batch.
-    if (result.error.code === "batch_generating" || result.error.code === "batch_exists") {
-      await refresh();
-      return;
-    }
+    // Another tab (or the request before a reload) changed the batches: show the current state.
+    const { code } = result.error;
+    if (STALE_CODES.includes(code)) await refresh();
+    // A batch generating or finished elsewhere needs no message; a lock or a mastered topic does.
+    if (code === "batch_generating" || code === "batch_exists") return;
     setError({ error: result.error, retry: () => void run(kind, path, method, body) });
   }
 
   async function refresh() {
     const result = await callApi<FlashcardState | null>(base, "GET");
     if (result.ok) setState(result.data);
+  }
+
+  // Polls the small summary; the cards are read once the generation has ended.
+  async function poll() {
+    const result = await callApi<FlashcardSummary | null>(`${base}/summary`, "GET");
+    if (result.ok && !result.data?.generating) await refresh();
   }
 
   const generate = () => void run("generate", base, "POST");
@@ -78,11 +91,11 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
   // until the batch is ready (or its claim expires and reads as no batch).
   useEffect(() => {
     if (!state?.generating || busy !== null) return;
-    const timer = window.setInterval(() => void refresh(), POLL_MS);
+    const timer = window.setInterval(() => void poll(), POLL_MS);
     return () => {
       window.clearInterval(timer);
     };
-    // refresh only reads base, which is fixed for the page.
+    // poll only reads base, which is fixed for the page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, busy]);
 
@@ -140,7 +153,7 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
               index === 0 ? (
                 <section key={batch.id} className="space-y-4">
                   <h2 className="text-lg font-semibold">{batchTitle(batch)}</h2>
-                  <BatchCards cards={batch.cards} disabled={busy !== null} onDelete={remove} />
+                  <BatchCards cards={batch.cards} disabled={busy !== null || generatingNext} onDelete={remove} />
                 </section>
               ) : (
                 <Collapsible key={batch.id} className="space-y-4">
@@ -151,7 +164,7 @@ export default function FlashcardBatch({ topicId, topicName, initial, autoStart,
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <BatchCards cards={batch.cards} disabled={busy !== null} onDelete={remove} />
+                    <BatchCards cards={batch.cards} disabled={busy !== null || generatingNext} onDelete={remove} />
                   </CollapsibleContent>
                 </Collapsible>
               ),
