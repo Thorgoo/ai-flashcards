@@ -299,31 +299,31 @@ POST now answers in well under a second (claim + enqueue + one state read). The 
 
 #### Automated
 
-- [ ] 1.1 Migration applies on a reset local database: `npm run db:reset`
-- [ ] 1.2 pgTAP passes: `npm run db:test`
-- [x] 1.3 Unit tests pass: `npm test`
-- [x] 1.4 Lint and types pass: `npm run lint` and `npx astro check`
-- [ ] 1.5 Smoke passes locally against `npm run preview` with `AI_MODE=fake`: `npm run smoke:topics`
+- [x] 1.1 Migration applies on a reset local database: `npm run db:reset` — 5a1c6a6
+- [x] 1.2 pgTAP passes: `npm run db:test` — 5a1c6a6
+- [x] 1.3 Unit tests pass: `npm test` — 5a1c6a6
+- [x] 1.4 Lint and types pass: `npm run lint` and `npx astro check` — 5a1c6a6
+- [x] 1.5 Smoke passes locally against `npm run preview` with `AI_MODE=fake`: `npm run smoke:topics` — 5a1c6a6
 
 #### Manual
 
-- [ ] 1.6 Migration applied to production Supabase before the Phase 1 merge
+- [x] 1.6 Migration applied to production Supabase before the Phase 1 merge — 5a1c6a6
 - [ ] 1.7 Forced AI failure shows the message, survives reload, retry generates the batch
 
 ### Phase 2: Queue consumer and async endpoints
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm test`
-- [ ] 2.2 Lint and types pass: `npm run lint` and `npx astro check`
-- [ ] 2.3 Build succeeds with the custom entry: `npm run build`
+- [x] 2.1 Unit tests pass: `npm test`
+- [x] 2.2 Lint and types pass: `npm run lint` and `npx astro check`
+- [x] 2.3 Build succeeds with the custom entry: `npm run build`
 - [ ] 2.4 pgTAP passes: `npm run db:test`
 - [ ] 2.5 Smoke passes against `npm run preview` with fake AI through the local queue: `npm run smoke:topics`
 - [ ] 2.6 CI is green on the PR
 
 #### Manual
 
-- [ ] 2.7 Queue `flashcard-generation` exists on the Cloudflare account before merge
+- [x] 2.7 Queue `flashcard-generation` exists on the Cloudflare account before merge
 - [ ] 2.8 Locally the flashcards page generates batch 1 and batch 2 through the queue
 - [ ] 2.9 The Workers Builds preview build for the PR still succeeds
 

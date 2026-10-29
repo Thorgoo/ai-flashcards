@@ -13,9 +13,16 @@ export interface Ai {
   call<T>(request: AiRequest<T>): Promise<AiResult<T>>;
 }
 
+// The mode AI calls run in; an invalid configuration reads as live, as getAi answers it.
+export function currentAiMode(): AiMode {
+  const mode = resolveAiMode(AI_MODE, SUPABASE_URL);
+  return mode === "invalid" ? "live" : mode;
+}
+
 // Entry point for every AI call in the app: wires the configured provider and the
-// account's daily limit around callAi.
-export function getAi(supabase: SupabaseClient, user: User | null): Ai {
+// account's daily limit around callAi. Only the user's id is read, so the queue consumer
+// (no session cookies) passes { id } from the job.
+export function getAi(supabase: SupabaseClient, user: Pick<User, "id"> | null): Ai {
   const mode = resolveAiMode(AI_MODE, SUPABASE_URL);
   if (mode === "invalid") {
     logAiError(`AI_MODE=${AI_MODE} needs a local Supabase (localhost or 127.0.0.1)`);
@@ -33,6 +40,6 @@ export function getAi(supabase: SupabaseClient, user: User | null): Ai {
   return { mode, call: (request) => callAi(deps, request) };
 }
 
-export { aiResponse } from "./response";
+export { aiAcceptedResponse, aiResponse } from "./response";
 export type { AiError, AiErrorCode, AiResult } from "./errors";
 export type { AiKind, AiRequest } from "./call";

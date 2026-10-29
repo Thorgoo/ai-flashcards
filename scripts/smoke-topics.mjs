@@ -107,6 +107,18 @@ async function signIn(email) {
   return { userId: created.data.user.id, cookie };
 }
 
+// Flashcard batches are generated in the queue consumer: POST answers 202 at once. Polls the
+// summary as the page does until the claim ends (bounded), then reads the full state.
+async function waitForBatch(topic, cookie, timeoutMs = 30_000) {
+  const deadline = Date.now() + timeoutMs;
+  let summary;
+  do {
+    await sleep(500);
+    summary = await api(`${topic}/flashcards/summary`, { method: "GET", cookie });
+  } while (summary.status === 200 && summary.json?.data?.generating && Date.now() < deadline);
+  return api(`${topic}/flashcards`, { method: "GET", cookie });
+}
+
 async function api(path, { method = "POST", body, cookie } = {}) {
   const response = await fetch(BASE_URL + path, {
     method,
@@ -306,18 +318,23 @@ try {
   const percentOf = new Map(results.map((row) => [row.subtopicId, row.percent]));
   const expected = batchAllocation(confirmed.map((subtopic) => percentOf.get(subtopic.id) ?? 0));
   r = await api(`${topic}/flashcards`, { cookie: a.cookie });
+  check(
+    "start the first flashcard batch (fake AI) in the background",
+    r.status === 202 && r.headers.get("X-AI-Mode") === "fake" && r.json?.data?.generating?.seq === 1,
+    describe(r),
+  );
+  r = await waitForBatch(topic, a.cookie);
   const cards = r.json?.data?.batches?.[0]?.cards ?? [];
   const perSubtopic = confirmed.map((subtopic) => cards.filter((card) => card.subtopicId === subtopic.id).length);
   check(
-    "generate the first flashcard batch (fake AI) split by the quiz results",
+    "the first flashcard batch is saved split by the quiz results, using one generation",
     r.status === 200 &&
-      r.headers.get("X-AI-Mode") === "fake" &&
       r.json?.data?.batches?.length === 1 &&
       cards.length === BATCH_SIZE &&
       confirmed.length > 0 &&
       perSubtopic.every((count) => count >= 1) &&
       JSON.stringify(perSubtopic) === JSON.stringify(expected) &&
-      r.json?.remaining === GENERATION_LIMIT - 4,
+      (await generationCalls(a.userId)) === 4,
     `${describe(r)}; expected ${JSON.stringify(expected)}, got ${JSON.stringify(perSubtopic)}`,
   );
   r = await api(`${topic}/flashcards`, { cookie: a.cookie });
@@ -566,19 +583,24 @@ try {
   const unmasteredIds = confirmed.map((subtopic) => subtopic.id).filter((id) => !masteredIds.includes(id));
 
   r = await api(next, { body: { seq: 2 }, cookie: a.cookie });
+  check(
+    "start batch 2 (fake AI) in the background",
+    r.status === 202 && r.headers.get("X-AI-Mode") === "fake" && r.json?.data?.generating?.seq === 2,
+    describe(r),
+  );
+  r = await waitForBatch(topic, a.cookie);
   const batchTwo = r.json?.data?.batches?.[0];
   const newCards = batchTwo?.cards ?? [];
   check(
-    "generate batch 2 (fake AI) for the unmastered subtopics only",
+    "batch 2 is saved for the unmastered subtopics only, using one generation",
     r.status === 200 &&
-      r.headers.get("X-AI-Mode") === "fake" &&
       r.json?.data?.batches?.length === 2 &&
       batchTwo?.seq === 2 &&
       newCards.length === BATCH_SIZE &&
       masteredIds.length > 0 &&
       !newCards.some((item) => masteredIds.includes(item.subtopicId)) &&
       unmasteredIds.every((id) => cardsOf(id, newCards).length >= 1) &&
-      r.json?.remaining === GENERATION_LIMIT - 5,
+      (await generationCalls(a.userId)) === 5,
     `${describe(r)}; mastered ${JSON.stringify(masteredIds)}, unmastered ${JSON.stringify(unmasteredIds)}`,
   );
   r = await api(next, { body: { seq: 2 }, cookie: a.cookie });
