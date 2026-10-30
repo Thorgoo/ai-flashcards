@@ -209,20 +209,20 @@ Migracja tylko rozszerzająca (nowa funkcja); wycofanie = `drop function public.
 
 #### Manual
 
-- [ ] 1.5 Po `db push` (wykonuje człowiek) `select * from study_streak()` w SQL editorze jako zalogowane konto zwraca jeden wiersz zgodny z historią odpowiedzi
+- [x] 1.5 Po `db push` (wykonuje człowiek) `select * from study_streak()` w SQL editorze jako zalogowane konto zwraca jeden wiersz zgodny z historią odpowiedzi
 
 ### Phase 2: Serwer + UI
 
 #### Automated
 
-- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (`streakLabel`, `streakHint`)
-- [x] 2.2 Kontrola typów przechodzi: `npx astro check`
-- [x] 2.3 Lint przechodzi: `npm run lint`
-- [x] 2.4 Build przechodzi: `npm run build`
-- [ ] 2.5 Smoke w CI przechodzi z krokiem kafelka serii
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (`streakLabel`, `streakHint`) — d79c96a
+- [x] 2.2 Kontrola typów przechodzi: `npx astro check` — d79c96a
+- [x] 2.3 Lint przechodzi: `npm run lint` — d79c96a
+- [x] 2.4 Build przechodzi: `npm run build` — d79c96a
+- [x] 2.5 Smoke w CI przechodzi z krokiem kafelka serii — d79c96a
 
 #### Manual
 
-- [ ] 2.6 Na produkcji, na temacie testowym: po odpowiedzi na fiszkę dashboard pokazuje serię ≥ 1 bez dopisku
-- [ ] 2.7 Zarchiwizowanie jedynego tematu z dzisiejszą odpowiedzią i przeładowanie strony zmniejsza serię; przywrócenie ją oddaje
-- [ ] 2.8 Kafelek czytelny na wąskim ekranie (telefon) i spójny z resztą dashboardu
+- [x] 2.6 Na produkcji, na temacie testowym: po odpowiedzi na fiszkę dashboard pokazuje serię ≥ 1 bez dopisku
+- [x] 2.7 Zarchiwizowanie jedynego tematu z dzisiejszą odpowiedzią i przeładowanie strony zmniejsza serię; przywrócenie ją oddaje
+- [x] 2.8 Kafelek czytelny na wąskim ekranie (telefon) i spójny z resztą dashboardu
