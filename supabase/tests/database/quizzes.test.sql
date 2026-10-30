@@ -253,12 +253,16 @@ select throws_ok(
 );
 
 -- Deleting the topic still cascades to its quiz (referential actions bypass the revoked privileges).
+-- Accounts cannot delete topics (archive replaces delete), so the delete runs as the owner
+-- role, as the account deletion cascade does.
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
 
+reset role;
 select lives_ok(
   $$ delete from public.topics where id = '00000000-0000-0000-0000-0000000000a1' $$,
   'deleting a topic cascades to its quiz'
 );
+set local role authenticated;
 select is(
   (select count(*) from public.quiz_questions where quiz_id = current_setting('test.quiz')::uuid),
   0::bigint,
