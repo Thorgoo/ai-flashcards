@@ -11,6 +11,18 @@ export interface Topic {
   status: TopicStatus;
   createdAt: string;
   confirmedAt: string | null;
+  archivedAt: string | null;
+}
+
+// One row of the home screen (topic_overview()): every topic, active and archived.
+export interface TopicOverview {
+  id: string;
+  name: string;
+  status: TopicStatus;
+  archivedAt: string | null;
+  createdAt: string;
+  dueCount: number;
+  lastStudiedOn: string | null;
 }
 
 export interface Subtopic {
@@ -34,6 +46,17 @@ interface TopicRow {
   status: TopicStatus;
   created_at: string;
   confirmed_at: string | null;
+  archived_at: string | null;
+}
+
+interface TopicOverviewRow {
+  id: string;
+  name: string;
+  status: TopicStatus;
+  archived_at: string | null;
+  created_at: string;
+  due_count: number;
+  last_studied_on: string | null;
 }
 
 interface SubtopicRow {
@@ -43,7 +66,7 @@ interface SubtopicRow {
   position: number;
 }
 
-const TOPIC_COLUMNS = "id, name, scope_note, status, created_at, confirmed_at";
+const TOPIC_COLUMNS = "id, name, scope_note, status, created_at, confirmed_at, archived_at";
 const SUBTOPIC_COLUMNS = "id, name, content_type, position";
 
 function toTopic(row: TopicRow): Topic {
@@ -54,6 +77,7 @@ function toTopic(row: TopicRow): Topic {
     status: row.status,
     createdAt: row.created_at,
     confirmedAt: row.confirmed_at,
+    archivedAt: row.archived_at,
   };
 }
 
@@ -79,12 +103,21 @@ function errorCode(error: PostgrestError): TopicErrorCode {
 }
 
 // All queries run as the signed-in account; RLS limits them to its own rows.
-export async function listTopics(supabase: SupabaseClient): Promise<Topic[]> {
-  const { data, error } = await supabase.from("topics").select(TOPIC_COLUMNS).order("created_at", { ascending: false });
-  if (error) {
-    throw new Error(`listing topics failed: ${error.message}`);
+// Newest first, with the cards due today and the last study day (topic_overview()).
+export async function listTopicOverview(supabase: SupabaseClient): Promise<TopicOverview[]> {
+  const result = await supabase.rpc("topic_overview");
+  if (result.error) {
+    throw new Error(`listing topics failed: ${result.error.message}`);
   }
-  return (data as TopicRow[]).map(toTopic);
+  return (result.data as TopicOverviewRow[]).map((row) => ({
+    id: row.id,
+    name: row.name,
+    status: row.status,
+    archivedAt: row.archived_at,
+    createdAt: row.created_at,
+    dueCount: row.due_count,
+    lastStudiedOn: row.last_studied_on,
+  }));
 }
 
 // Null when the topic does not exist or belongs to another account.
@@ -189,4 +222,42 @@ export async function deleteSubtopic(
 export async function confirmTopic(supabase: SupabaseClient, topicId: string): Promise<RepoResult<null>> {
   const { error } = await supabase.from("topics").update({ status: "confirmed" }).eq("id", topicId);
   return error ? { ok: false, code: errorCode(error) } : { ok: true, value: null };
+}
+
+// Null when the topic does not exist or belongs to another account. The name may change in
+// both statuses; the status trigger keeps a confirmed topic's scope.
+export async function renameTopic(
+  supabase: SupabaseClient,
+  topicId: string,
+  name: string,
+): Promise<RepoResult<Topic | null>> {
+  const { data, error } = await supabase
+    .from("topics")
+    .update({ name })
+    .eq("id", topicId)
+    .select(TOPIC_COLUMNS)
+    .maybeSingle<TopicRow>();
+  if (error) {
+    return { ok: false, code: errorCode(error) };
+  }
+  return { ok: true, value: data ? toTopic(data) : null };
+}
+
+// Archives (or restores) a topic. The status trigger stores the archive date itself and keeps
+// the first one when an archived topic is archived again.
+export async function setTopicArchived(
+  supabase: SupabaseClient,
+  topicId: string,
+  archived: boolean,
+): Promise<RepoResult<Topic | null>> {
+  const { data, error } = await supabase
+    .from("topics")
+    .update({ archived_at: archived ? new Date().toISOString() : null })
+    .eq("id", topicId)
+    .select(TOPIC_COLUMNS)
+    .maybeSingle<TopicRow>();
+  if (error) {
+    return { ok: false, code: errorCode(error) };
+  }
+  return { ok: true, value: data ? toTopic(data) : null };
 }

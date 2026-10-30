@@ -25,8 +25,10 @@ export type ContentType = (typeof CONTENT_TYPES)[number];
 const subtopicName = z.string().trim().min(1).max(SUBTOPIC_NAME_MAX);
 const contentType = z.enum(CONTENT_TYPES);
 
+const topicName = z.string().trim().min(1).max(TOPIC_NAME_MAX);
+
 export const createTopicInput = z.object({
-  name: z.string().trim().min(1).max(TOPIC_NAME_MAX),
+  name: topicName,
   scopeNote: z
     .string()
     .trim()
@@ -34,6 +36,13 @@ export const createTopicInput = z.object({
     .nullish()
     .transform((note) => (note === "" ? null : (note ?? null))),
 });
+
+// PATCH /api/topics/[id]: rename, or archive/restore — one change per request. Strict, so an
+// empty body, both fields together or an unknown key is refused.
+export const updateTopicInput = z.union([
+  z.object({ name: topicName }).strict(),
+  z.object({ archived: z.boolean() }).strict(),
+]);
 
 export const addSubtopicInput = z.object({ name: subtopicName, contentType });
 
@@ -81,5 +90,6 @@ export const studyAnswerInput = z.discriminatedUnion("format", [
 export const nextBatchInput = z.object({ seq: z.number().int().min(2) }).strict();
 
 export type CreateTopicInput = z.infer<typeof createTopicInput>;
+export type UpdateTopicInput = z.infer<typeof updateTopicInput>;
 export type AddSubtopicInput = z.infer<typeof addSubtopicInput>;
 export type UpdateSubtopicInput = z.infer<typeof updateSubtopicInput>;

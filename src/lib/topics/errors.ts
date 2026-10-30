@@ -17,6 +17,7 @@ export type TopicErrorCode =
   | "flashcard_not_found"
   | "card_not_due"
   | "attempt_conflict"
+  | "topic_archived"
   | "save_failed";
 
 // Same shape as AiError (src/lib/ai/errors.ts), so the client handles one error format.
@@ -48,6 +49,11 @@ const errors: Record<TopicErrorCode, { message: string; retryable: boolean; stat
   card_not_due: { message: "Ta fiszka nie czeka już na powtórkę.", retryable: false, status: 409 },
   attempt_conflict: {
     message: "Tej odpowiedzi nie da się zapisać dla tej fiszki. Odśwież stronę.",
+    retryable: false,
+    status: 409,
+  },
+  topic_archived: {
+    message: "Ten temat jest zarchiwizowany. Przywróć go na ekranie głównym.",
     retryable: false,
     status: 409,
   },

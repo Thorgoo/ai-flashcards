@@ -13,6 +13,10 @@ const supabase = createClient(Astro.request.headers, Astro.cookies);
 const id = Astro.params.id ?? "";
 // Missing and other accounts' topics look the same: not found.
 const found = supabase && isUuid(id) ? await getTopic(supabase, id) : null;
+// An archived topic is hidden; it can only be restored from the home screen.
+if (found?.topic.archivedAt) {
+  return Astro.redirect("/dashboard");
+}
 if (!found) {
   Astro.response.status = 404;
 }

@@ -360,23 +360,23 @@ Migracja jest rozszerzająca. Istniejące tematy dostają `archived_at = null`, 
 
 #### Automated
 
-- [ ] 1.1 Migracja i testy bazy przechodzą w CI (`smoke` → `Database tests`)
-- [ ] 1.2 `topic_archive.test.sql` pokrywa zmianę nazwy, zamrożenie `scope_note`, datę archiwizacji ustawianą przez trigger, przywrócenie, brak DELETE, `due_count` i `last_studied_on` dla przykładu A/B/C/D oraz izolację konta
-- [ ] 1.3 `rls_guard.test.sql` i `account_isolation.test.sql` przechodzą z wyjątkiem dla DELETE na `topics`
-- [x] 1.4 Lint przechodzi: `npm run lint`
+- [x] 1.1 Migracja i testy bazy przechodzą w CI (`smoke` → `Database tests`) — 7fd7c19
+- [x] 1.2 `topic_archive.test.sql` pokrywa zmianę nazwy, zamrożenie `scope_note`, datę archiwizacji ustawianą przez trigger, przywrócenie, brak DELETE, `due_count` i `last_studied_on` dla przykładu A/B/C/D oraz izolację konta — 7fd7c19
+- [x] 1.3 `rls_guard.test.sql` i `account_isolation.test.sql` przechodzą z wyjątkiem dla DELETE na `topics` — 7fd7c19
+- [x] 1.4 Lint przechodzi: `npm run lint` — 7fd7c19
 
 #### Manual
 
-- [x] 1.5 Przegląd migracji: wyłącznie rozszerzająca, stara migracja nietknięta, brak `grant` dla `anon`/`public`, komentarz o lustrze predykatu `getStudySession` obecny
+- [x] 1.5 Przegląd migracji: wyłącznie rozszerzająca, stara migracja nietknięta, brak `grant` dla `anon`/`public`, komentarz o lustrze predykatu `getStudySession` obecny — 7fd7c19
 
 ### Phase 2: Serwer — repozytorium, PATCH, blokada zarchiwizowanych
 
 #### Automated
 
-- [ ] 2.1 Testy jednostkowe przechodzą: `npm test` (w tym `updateTopicInput` w `schemas.test.ts`)
-- [ ] 2.2 Kontrola typów przechodzi: `npx astro check`
-- [ ] 2.3 Lint przechodzi: `npm run lint`
-- [ ] 2.4 Build przechodzi: `npm run build`
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (w tym `updateTopicInput` w `schemas.test.ts`)
+- [x] 2.2 Kontrola typów przechodzi: `npx astro check`
+- [x] 2.3 Lint przechodzi: `npm run lint`
+- [x] 2.4 Build przechodzi: `npm run build`
 - [ ] 2.5 Smoke w CI przechodzi z krokami zmiany nazwy, archiwizacji, 409 `topic_archived` i przywrócenia
 
 #### Manual
