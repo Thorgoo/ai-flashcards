@@ -44,15 +44,21 @@ export async function readJson<T>(request: Request, schema: z.ZodType<T>): Promi
 }
 
 // Loads the topic named in the route, or the 404 response. A malformed id is also a 404.
+// An archived topic is refused (409 topic_archived) unless the route allows it, so every
+// /api/topics/[id]/* route blocks it without its own check.
 export async function loadTopic(
   supabase: SupabaseClient,
   id: string | undefined,
+  options: { allowArchived?: boolean } = {},
 ): Promise<TopicWithSubtopics | Response> {
   if (!isUuid(id)) {
     return topicErrorResponse("not_found");
   }
   const found = await readTopic(supabase, id);
-  return found ?? topicErrorResponse("not_found");
+  if (found === null) return topicErrorResponse("not_found");
+  if (found instanceof Response) return found;
+  if (found.topic.archivedAt !== null && !options.allowArchived) return topicErrorResponse("topic_archived");
+  return found;
 }
 
 // Every mutation answers with the topic's full current state, so the client never

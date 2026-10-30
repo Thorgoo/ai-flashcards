@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { addSubtopicInput, createTopicInput, nextBatchInput, studyAnswerInput, updateSubtopicInput } from "./schemas";
+import {
+  addSubtopicInput,
+  createTopicInput,
+  nextBatchInput,
+  studyAnswerInput,
+  updateSubtopicInput,
+  updateTopicInput,
+} from "./schemas";
 
 describe("createTopicInput", () => {
   it("trims the name and turns an empty scope note into null", () => {
@@ -19,6 +26,25 @@ describe("createTopicInput", () => {
     expect(createTopicInput.safeParse({ name: "x".repeat(101) }).success).toBe(false);
     expect(createTopicInput.safeParse({ name: "x".repeat(100) }).success).toBe(true);
     expect(createTopicInput.safeParse({ name: "Spring", scopeNote: "x".repeat(501) }).success).toBe(false);
+  });
+});
+
+describe("updateTopicInput", () => {
+  it("accepts a trimmed name or the archive flag", () => {
+    expect(updateTopicInput.parse({ name: "  Spring Boot  " })).toEqual({ name: "Spring Boot" });
+    expect(updateTopicInput.parse({ archived: true })).toEqual({ archived: true });
+    expect(updateTopicInput.parse({ archived: false })).toEqual({ archived: false });
+    expect(updateTopicInput.safeParse({ name: "x".repeat(100) }).success).toBe(true);
+  });
+
+  it("rejects an empty body, an empty or too long name, both fields and unknown keys", () => {
+    expect(updateTopicInput.safeParse({}).success).toBe(false);
+    expect(updateTopicInput.safeParse({ name: "" }).success).toBe(false);
+    expect(updateTopicInput.safeParse({ name: "   " }).success).toBe(false);
+    expect(updateTopicInput.safeParse({ name: "x".repeat(101) }).success).toBe(false);
+    expect(updateTopicInput.safeParse({ name: "Spring", archived: true }).success).toBe(false);
+    expect(updateTopicInput.safeParse({ scopeNote: "Boot 3" }).success).toBe(false);
+    expect(updateTopicInput.safeParse({ archived: "true" }).success).toBe(false);
   });
 });
 

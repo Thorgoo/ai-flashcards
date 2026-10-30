@@ -636,6 +636,45 @@ try {
     describe(r),
   );
 
+  // Home screen (FR-007): rename, archive and restore the confirmed topic. An archived topic is
+  // refused by every /api/topics/[id]/* route and hidden from its pages until restored. No AI.
+  r = await api(topic, { method: "PATCH", body: { name: "  Kubernetes w praktyce  " }, cookie: a.cookie });
+  check(
+    "rename a confirmed topic",
+    r.status === 200 && r.json?.data?.name === "Kubernetes w praktyce" && r.json?.data?.status === "confirmed",
+    describe(r),
+  );
+  r = await api(topic, { method: "PATCH", body: { name: "Obcy" }, cookie: b.cookie });
+  check("another account cannot rename the topic", r.status === 404, describe(r));
+  r = await api(topic, { method: "PATCH", body: { archived: true }, cookie: a.cookie });
+  check("archive the topic", r.status === 200 && typeof r.json?.data?.archivedAt === "string", describe(r));
+  r = await api(`${topic}/flashcards`, { method: "GET", cookie: a.cookie });
+  check(
+    "an archived topic is refused by its routes",
+    r.status === 409 && r.json?.error?.code === "topic_archived",
+    describe(r),
+  );
+  r = await api(`/topics/${topicId}`, { method: "GET", cookie: a.cookie });
+  check(
+    "an archived topic's page redirects to the dashboard",
+    r.status === 302 && r.headers.get("Location") === "/dashboard",
+    `status ${r.status}, location ${r.headers.get("Location")}`,
+  );
+  r = await api(topic, { method: "PATCH", body: { name: "Po archiwizacji" }, cookie: a.cookie });
+  check(
+    "an archived topic cannot be renamed",
+    r.status === 409 && r.json?.error?.code === "topic_archived",
+    describe(r),
+  );
+  r = await api(topic, { method: "PATCH", body: { archived: false }, cookie: a.cookie });
+  check(
+    "restore the topic",
+    r.status === 200 && r.json?.data?.archivedAt === null && r.json?.data?.name === "Kubernetes w praktyce",
+    describe(r),
+  );
+  r = await api(`${topic}/flashcards`, { method: "GET", cookie: a.cookie });
+  check("a restored topic answers its routes again", r.status === 200, describe(r));
+
   // Five generations used so far (generate, regenerate, quiz, flashcards, batch 2; the study
   // session calls no AI and grading has its own limit); refused calls must not count.
   const generations = [];

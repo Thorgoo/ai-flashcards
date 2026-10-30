@@ -5,10 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TOPIC_STATUS_LABELS } from "@/components/topics/labels";
 import { createClient } from "@/lib/supabase";
-import { listTopics } from "@/lib/topics/repository";
+import { listTopicOverview } from "@/lib/topics/repository";
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
-const topics = supabase ? await listTopics(supabase) : [];
+const topics = supabase ? await listTopicOverview(supabase) : [];
 ---
 
 <Layout title="Tematy">

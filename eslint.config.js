@@ -67,6 +67,9 @@ const astroConfig = defineConfig({
     "astro/no-set-html-directive": "error",
     "astro/no-unused-css-selector": "warn",
     "astro/prefer-class-list-directive": "warn",
+    // The rule crashes on a top-level `return Astro.redirect(...)` in frontmatter (it looks for an
+    // enclosing function); frontmatter returns are never void callbacks, so skip that check here.
+    "@typescript-eslint/no-misused-promises": ["error", { checksVoidReturn: { attributes: false, returns: false } }],
   },
 });
 
