@@ -12,7 +12,9 @@ create temporary table rls_guard_exceptions (table_name text, reason text, prima
 insert into rls_guard_exceptions (table_name, reason)
 values
   -- Append-only AI limit counter: owners only read; writes go through begin_ai_call / finish_ai_call
-  ('ai_calls', 'no policy for every command');
+  ('ai_calls', 'no policy for every command'),
+  -- No DELETE policy: archive replaces delete (FR-007); account deletion cascades
+  ('topics', 'no policy for every command');
 
 create temporary view rls_guard_violations as
 select v.table_name, v.reason

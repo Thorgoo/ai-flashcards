@@ -232,11 +232,14 @@ select is(
   'retrying an attempt of a deleted card returns its stored correctness'
 );
 
--- Deleting the topic takes its log with it.
+-- Deleting the topic takes its log with it. Accounts cannot delete topics (archive
+-- replaces delete), so the delete runs as the owner role, as the account deletion cascade does.
+reset role;
 select lives_ok(
   $$ delete from public.topics where id = '00000000-0000-0000-0000-0000000000a1' $$,
   'deleting a topic cascades to its answers'
 );
+set local role authenticated;
 select is((select count(*) from public.flashcard_answers), 0::bigint, 'the answers are gone with the topic');
 
 reset role;

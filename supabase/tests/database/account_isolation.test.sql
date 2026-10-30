@@ -129,7 +129,7 @@ select is((select count(*) from public.ai_calls), 0::bigint, 'account B sees non
 select is((select count(*) from public.topics), 0::bigint, 'account B sees none of A''s topics');
 select is((select count(*) from public.subtopics), 0::bigint, 'account B sees none of A''s subtopics');
 select lives_ok($$ update public.topics set name = 'b-was-here' $$, 'account B topic update runs without error');
-select lives_ok($$ delete from public.topics $$, 'account B topic delete runs without error');
+select throws_ok($$ delete from public.topics $$, '42501', null, 'account B cannot delete topics');
 select lives_ok($$ update public.subtopics set name = 'b-was-here' $$, 'account B subtopic update runs without error');
 select lives_ok($$ delete from public.subtopics $$, 'account B subtopic delete runs without error');
 select throws_ok(

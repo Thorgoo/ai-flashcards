@@ -380,13 +380,17 @@ select throws_ok(
   'another account cannot save flashcards for A''s topic'
 );
 
--- Deleting the topic cascades to its batch and cards.
+-- Deleting the topic cascades to its batch and cards. Accounts cannot delete topics
+-- (archive replaces delete), so the delete runs as the owner role, as the account
+-- deletion cascade does.
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
 
+reset role;
 select lives_ok(
   $$ delete from public.topics where id = '00000000-0000-0000-0000-0000000000a1' $$,
   'deleting a topic cascades to its flashcards'
 );
+set local role authenticated;
 select is(
   (select count(*) from public.flashcard_batches) + (select count(*) from public.flashcards),
   0::bigint,
