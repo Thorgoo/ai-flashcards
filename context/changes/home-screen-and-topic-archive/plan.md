@@ -387,15 +387,15 @@ Migracja jest rozszerzająca. Istniejące tematy dostają `archived_at = null`, 
 
 #### Automated
 
-- [x] 3.1 Testy jednostkowe przechodzą: `npm test` (`dueLabel`, `lastSessionLabel`)
-- [x] 3.2 Kontrola typów przechodzi: `npx astro check`
-- [x] 3.3 Lint przechodzi: `npm run lint`
-- [x] 3.4 Build przechodzi: `npm run build`
+- [x] 3.1 Testy jednostkowe przechodzą: `npm test` (`dueLabel`, `lastSessionLabel`) — 70b54bf
+- [x] 3.2 Kontrola typów przechodzi: `npx astro check` — 70b54bf
+- [x] 3.3 Lint przechodzi: `npm run lint` — 70b54bf
+- [x] 3.4 Build przechodzi: `npm run build` — 70b54bf
 
 #### Manual
 
-- [ ] 3.5 Na produkcji, na temacie testowym: dashboard pokazuje „Do powtórki: N” zgodne z liczbą fiszek w „Ucz się (N)” na stronie tematu i datę ostatniej odpowiedzi; temat bez odpowiedzi pokazuje „—”
-- [ ] 3.6 Zmiana nazwy (Enter, Escape, pusta nazwa → błąd) działa i przetrwa odświeżenie
-- [ ] 3.7 Archiwizacja pokazuje dialog; po potwierdzeniu temat trafia do „Zarchiwizowane (N)”, a jego URL przekierowuje na dashboard
-- [ ] 3.8 Przywrócenie przenosi temat z powrotem z tymi samymi fiszkami, postępem i datą ostatniej sesji
-- [ ] 3.9 Widok na szerokości telefonu bez poziomego przewijania, fokus widoczny na przyciskach i w dialogu
+- [x] 3.5 Na produkcji, na temacie testowym: dashboard pokazuje „Do powtórki: N” zgodne z liczbą fiszek w „Ucz się (N)” na stronie tematu i datę ostatniej odpowiedzi; temat bez odpowiedzi pokazuje „—” — 70b54bf
+- [x] 3.6 Zmiana nazwy (Enter, Escape, pusta nazwa → błąd) działa i przetrwa odświeżenie — 70b54bf
+- [x] 3.7 Archiwizacja pokazuje dialog; po potwierdzeniu temat trafia do „Zarchiwizowane (N)”, a jego URL przekierowuje na dashboard — 70b54bf
+- [x] 3.8 Przywrócenie przenosi temat z powrotem z tymi samymi fiszkami, postępem i datą ostatniej sesji — 70b54bf
+- [x] 3.9 Widok na szerokości telefonu bez poziomego przewijania, fokus widoczny na przyciskach i w dialogu — 70b54bf

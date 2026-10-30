@@ -1,7 +1,7 @@
 ---
 change_id: home-screen-and-topic-archive
 title: Home screen and topic archive
-status: implementing
+status: implemented
 created: 2026-10-30
 updated: 2026-10-30
 archived_at: null
