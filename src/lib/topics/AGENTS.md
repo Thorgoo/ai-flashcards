@@ -15,6 +15,7 @@
 - `@mastery.ts` mirrors `claim_next_flashcard_batch` (the 80% unlock and what a mastered subtopic is); change both together. A subtopic's mastery counts its flashcards only, never the quiz.
 - "Today" is the Europe/Warsaw date: `@study-day.ts` for reads, the database for writes.
 - Deleting a card sets `flashcard_answers.flashcard_id` to null and keeps the answer; only deleting the topic or the account removes the log.
+- The daily streak comes only from `study_streak()` (a day = ≥1 flashcard answer on an active topic, Warsaw date); S-10 reads it there, never counts its own.
 
 ## Endpoints
 

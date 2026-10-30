@@ -702,6 +702,12 @@ try {
     r.status === 200 && r.text.includes("Kubernetes") && r.text.includes("Docker"),
     `status ${r.status}`,
   );
+  // Account A answered flashcards today on the Kubernetes topic, archived and restored above.
+  check(
+    "dashboard shows the study streak",
+    r.status === 200 && r.text.includes("Seria: 1 dzień"),
+    `status ${r.status}`,
+  );
 
   r = await api(`/topics/${topicId}`, { method: "GET", cookie: b.cookie });
   check("another account gets 404 on the topic page", r.status === 404, `status ${r.status}`);

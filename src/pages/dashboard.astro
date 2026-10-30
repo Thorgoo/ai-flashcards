@@ -2,12 +2,17 @@
 import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import { Button } from "@/components/ui/button";
+import { Flame } from "lucide-react";
 import HomeTopics from "@/components/topics/HomeTopics";
+import { streakHint, streakLabel } from "@/components/topics/labels";
 import { createClient } from "@/lib/supabase";
-import { listTopicOverview } from "@/lib/topics/repository";
+import { getStudyStreak, listTopicOverview } from "@/lib/topics/repository";
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
-const topics = supabase ? await listTopicOverview(supabase) : [];
+const [topics, streak] = supabase
+  ? await Promise.all([listTopicOverview(supabase), getStudyStreak(supabase)])
+  : [[], null];
+const hint = streak ? streakHint(streak) : null;
 ---
 
 <Layout title="Tematy">
@@ -20,6 +25,16 @@ const topics = supabase ? await listTopicOverview(supabase) : [];
           <a href="/topics/new">Nowy temat</a>
         </Button>
       </div>
+
+      {streak && (
+        <section class="border-border bg-card text-card-foreground mb-4 flex items-start gap-3 rounded-lg border p-3">
+          <Flame className="text-muted-foreground mt-0.5 size-5 shrink-0" aria-hidden="true" />
+          <div class="min-w-0">
+            <p class="font-medium">{streakLabel(streak.days)}</p>
+            {hint && <p class="text-muted-foreground text-sm">{hint}</p>}
+          </div>
+        </section>
+      )}
 
       <HomeTopics client:load topics={topics} />
     </main>

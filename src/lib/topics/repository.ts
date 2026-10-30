@@ -25,6 +25,12 @@ export interface TopicOverview {
   lastStudiedOn: string | null;
 }
 
+// The account's daily study streak (study_streak()).
+export interface StudyStreak {
+  days: number;
+  studiedToday: boolean;
+}
+
 export interface Subtopic {
   id: string;
   name: string;
@@ -57,6 +63,11 @@ interface TopicOverviewRow {
   created_at: string;
   due_count: number;
   last_studied_on: string | null;
+}
+
+interface StudyStreakRow {
+  streak_days: number;
+  studied_today: boolean;
 }
 
 interface SubtopicRow {
@@ -118,6 +129,16 @@ export async function listTopicOverview(supabase: SupabaseClient): Promise<Topic
     dueCount: row.due_count,
     lastStudiedOn: row.last_studied_on,
   }));
+}
+
+// The streak counts only answers on active topics; study_streak() always returns one row.
+export async function getStudyStreak(supabase: SupabaseClient): Promise<StudyStreak> {
+  const result = await supabase.rpc("study_streak");
+  if (result.error) {
+    throw new Error(`loading study streak failed: ${result.error.message}`);
+  }
+  const [row] = result.data as StudyStreakRow[];
+  return { days: row.streak_days, studiedToday: row.studied_today };
 }
 
 // Null when the topic does not exist or belongs to another account.

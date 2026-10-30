@@ -1,5 +1,5 @@
 import type { ContentType } from "@/lib/topics/schemas";
-import type { TopicStatus } from "@/lib/topics/repository";
+import type { StudyStreak, TopicStatus } from "@/lib/topics/repository";
 
 export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   conceptual: "Pojęciowy",
@@ -31,4 +31,15 @@ export function lastSessionLabel(date: string | null): string {
   if (date === null) return "Ostatnia sesja: —";
   const [year, month, day] = date.split("-");
   return `Ostatnia sesja: ${day}.${month}.${year}`;
+}
+
+// The streak tile on the home screen: "1 dzień", every other count "dni".
+export function streakLabel(days: number): string {
+  return `Seria: ${days} ${days === 1 ? "dzień" : "dni"}`;
+}
+
+// The hint under the streak; none once the account has studied today.
+export function streakHint(streak: StudyStreak): string | null {
+  if (streak.studiedToday) return null;
+  return streak.days === 0 ? "Odpowiedz na fiszkę, aby zacząć serię" : "Ucz się dziś, aby utrzymać serię";
 }
