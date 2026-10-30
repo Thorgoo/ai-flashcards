@@ -202,10 +202,10 @@ Migracja tylko rozszerzająca (nowa funkcja); wycofanie = `drop function public.
 
 #### Automated
 
-- [ ] 1.1 Migracja i testy bazy przechodzą w CI (`smoke` → `Database tests`)
-- [ ] 1.2 `study_streak.test.sql` pokrywa wszystkie przypadki z kontraktu, w tym archiwizację/przywrócenie i izolację konta
-- [ ] 1.3 `account_isolation.test.sql` i `rls_guard.test.sql` przechodzą bez zmian
-- [x] 1.4 Lint przechodzi: `npm run lint`
+- [x] 1.1 Migracja i testy bazy przechodzą w CI (`smoke` → `Database tests`) — 6502758
+- [x] 1.2 `study_streak.test.sql` pokrywa wszystkie przypadki z kontraktu, w tym archiwizację/przywrócenie i izolację konta — 6502758
+- [x] 1.3 `account_isolation.test.sql` i `rls_guard.test.sql` przechodzą bez zmian — 6502758
+- [x] 1.4 Lint przechodzi: `npm run lint` — 6502758
 
 #### Manual
 
@@ -215,10 +215,10 @@ Migracja tylko rozszerzająca (nowa funkcja); wycofanie = `drop function public.
 
 #### Automated
 
-- [ ] 2.1 Testy jednostkowe przechodzą: `npm test` (`streakLabel`, `streakHint`)
-- [ ] 2.2 Kontrola typów przechodzi: `npx astro check`
-- [ ] 2.3 Lint przechodzi: `npm run lint`
-- [ ] 2.4 Build przechodzi: `npm run build`
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (`streakLabel`, `streakHint`)
+- [x] 2.2 Kontrola typów przechodzi: `npx astro check`
+- [x] 2.3 Lint przechodzi: `npm run lint`
+- [x] 2.4 Build przechodzi: `npm run build`
 - [ ] 2.5 Smoke w CI przechodzi z krokiem kafelka serii
 
 #### Manual
