@@ -1,9 +1,8 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TOPIC_STATUS_LABELS } from "@/components/topics/labels";
+import HomeTopics from "@/components/topics/HomeTopics";
 import { createClient } from "@/lib/supabase";
 import { listTopicOverview } from "@/lib/topics/repository";
 
@@ -22,27 +21,7 @@ const topics = supabase ? await listTopicOverview(supabase) : [];
         </Button>
       </div>
 
-      {topics.length === 0 ? (
-        <p class="text-muted-foreground border-border rounded-lg border p-6 text-center">
-          Nie masz jeszcze tematów. Utwórz pierwszy — AI zaproponuje podtematy do nauki.
-        </p>
-      ) : (
-        <ul class="space-y-2">
-          {topics.map((topic) => (
-            <li>
-              <a
-                href={`/topics/${topic.id}`}
-                class="border-border bg-card text-card-foreground hover:bg-accent flex items-center justify-between gap-3 rounded-lg border p-4 transition-colors"
-              >
-                <span class="min-w-0 truncate font-medium">{topic.name}</span>
-                <Badge variant={topic.status === "confirmed" ? "default" : "secondary"}>
-                  {TOPIC_STATUS_LABELS[topic.status]}
-                </Badge>
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
+      <HomeTopics client:load topics={topics} />
     </main>
   </div>
 </Layout>

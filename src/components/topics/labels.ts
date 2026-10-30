@@ -20,3 +20,15 @@ export function openProgressLabel(openStreak: 0 | 1): string {
 export function studyLabel(dueCount: number | null): string {
   return dueCount === null || dueCount === 0 ? "Ucz się" : `Ucz się (${dueCount})`;
 }
+
+// Cards due today on the home screen row.
+export function dueLabel(count: number): string {
+  return `Do powtórki: ${count}`;
+}
+
+// The last study day (YYYY-MM-DD) as DD.MM.YYYY; split as text, so no time zone can shift the day.
+export function lastSessionLabel(date: string | null): string {
+  if (date === null) return "Ostatnia sesja: —";
+  const [year, month, day] = date.split("-");
+  return `Ostatnia sesja: ${day}.${month}.${year}`;
+}
