@@ -373,24 +373,24 @@ Migracja jest rozszerzająca. Istniejące tematy dostają `archived_at = null`, 
 
 #### Automated
 
-- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (w tym `updateTopicInput` w `schemas.test.ts`)
-- [x] 2.2 Kontrola typów przechodzi: `npx astro check`
-- [x] 2.3 Lint przechodzi: `npm run lint`
-- [x] 2.4 Build przechodzi: `npm run build`
-- [ ] 2.5 Smoke w CI przechodzi z krokami zmiany nazwy, archiwizacji, 409 `topic_archived` i przywrócenia
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test` (w tym `updateTopicInput` w `schemas.test.ts`) — afbcb23
+- [x] 2.2 Kontrola typów przechodzi: `npx astro check` — afbcb23
+- [x] 2.3 Lint przechodzi: `npm run lint` — afbcb23
+- [x] 2.4 Build przechodzi: `npm run build` — afbcb23
+- [x] 2.5 Smoke w CI przechodzi z krokami zmiany nazwy, archiwizacji, 409 `topic_archived` i przywrócenia — afbcb23
 
 #### Manual
 
-- [ ] 2.6 Otwarcie `/topics/<id>` zarchiwizowanego tematu (zarchiwizowanego przez API) przekierowuje na `/dashboard`
+- [x] 2.6 Otwarcie `/topics/<id>` zarchiwizowanego tematu (zarchiwizowanego przez API) przekierowuje na `/dashboard` — afbcb23
 
 ### Phase 3: UI — ekran główny
 
 #### Automated
 
-- [ ] 3.1 Testy jednostkowe przechodzą: `npm test` (`dueLabel`, `lastSessionLabel`)
-- [ ] 3.2 Kontrola typów przechodzi: `npx astro check`
-- [ ] 3.3 Lint przechodzi: `npm run lint`
-- [ ] 3.4 Build przechodzi: `npm run build`
+- [x] 3.1 Testy jednostkowe przechodzą: `npm test` (`dueLabel`, `lastSessionLabel`)
+- [x] 3.2 Kontrola typów przechodzi: `npx astro check`
+- [x] 3.3 Lint przechodzi: `npm run lint`
+- [x] 3.4 Build przechodzi: `npm run build`
 
 #### Manual
 
