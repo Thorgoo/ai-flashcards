@@ -1,4 +1,6 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+import type { EarnedBadge } from "@/lib/badges/catalog";
+import { getAttemptBadges } from "@/lib/badges/repository";
 import type { TopicErrorCode } from "./errors";
 import {
   CARD_COLUMNS,
@@ -26,6 +28,8 @@ export interface ChoiceResult {
   correct: boolean;
   correctIndex: number;
   stage: "choice" | "open";
+  // The badges this answer earned (the same on a retry of the attempt); empty when none.
+  badges: EarnedBadge[];
 }
 
 export interface OpenResult {
@@ -34,6 +38,8 @@ export interface OpenResult {
   feedback: string;
   stage: "open" | "mastered";
   openStreak: 0 | 1;
+  // As in ChoiceResult.
+  badges: EarnedBadge[];
 }
 
 // What the open-answer endpoint does before any AI call: return a stored result (a retried
@@ -71,6 +77,19 @@ function errorCode(error: PostgrestError): TopicErrorCode {
   // eslint-disable-next-line no-console
   console.error("[topics] study database error", error);
   return "save_failed";
+}
+
+// The badges the database awarded to the attempt (sync_badges, from the answer trigger), read
+// after every save and replay. A failed read is save_failed: the answer is stored, and the
+// client's retry of the same attempt replays it.
+async function attemptBadges(supabase: SupabaseClient, attemptId: string): Promise<RepoResult<EarnedBadge[]>> {
+  try {
+    return { ok: true, value: await getAttemptBadges(supabase, attemptId) };
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[topics] reading attempt badges failed", error);
+    return { ok: false, code: "save_failed" };
+  }
 }
 
 // Cards of every batch of the topic in the 'choice' or 'open' stage and due by today, oldest
@@ -166,7 +185,12 @@ export async function answerFlashcardChoice(
   if (row.correct_index === null || row.stage === null) {
     return { ok: false, code: "flashcard_not_found" };
   }
-  return { ok: true, value: { correct: row.correct, correctIndex: row.correct_index, stage: row.stage } };
+  const badges = await attemptBadges(supabase, attemptId);
+  if (!badges.ok) return badges;
+  return {
+    ok: true,
+    value: { correct: row.correct, correctIndex: row.correct_index, stage: row.stage, badges: badges.value },
+  };
 }
 
 interface OpenCardRow {
@@ -216,11 +240,14 @@ export async function readOpenAttempt(
   if (attempt) {
     // An open answer always has feedback and leaves the card open or mastered (the checks).
     if (card.stage === "choice" || attempt.feedback === null) return { ok: false, code: "attempt_conflict" };
-    const result = {
+    const badges = await attemptBadges(supabase, attemptId);
+    if (!badges.ok) return badges;
+    const result: OpenResult = {
       correct: attempt.correct,
       feedback: attempt.feedback,
       stage: card.stage,
       openStreak: card.open_streak,
+      badges: badges.value,
     };
     return { ok: true, value: { kind: "replay", result } };
   }
@@ -271,8 +298,16 @@ export async function answerFlashcardOpen(
   if (row.stage === null || row.open_streak === null) {
     return { ok: false, code: "flashcard_not_found" };
   }
+  const badges = await attemptBadges(supabase, attemptId);
+  if (!badges.ok) return badges;
   return {
     ok: true,
-    value: { correct: row.correct, feedback: row.feedback, stage: row.stage, openStreak: row.open_streak },
+    value: {
+      correct: row.correct,
+      feedback: row.feedback,
+      stage: row.stage,
+      openStreak: row.open_streak,
+      badges: badges.value,
+    },
   };
 }

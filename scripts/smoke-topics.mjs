@@ -63,6 +63,15 @@ async function master(ids) {
   if (error) throw new Error(`mastering cards failed: ${error.message}`);
 }
 
+// Sets the topic's historical mastered-card tally (topic_mastery_tallies), standing in for
+// cards mastered earlier and since deleted; the app can only read it.
+async function setMasteredTally(topicId, userId, count) {
+  const { error } = await admin
+    .from("topic_mastery_tallies")
+    .upsert({ topic_id: topicId, user_id: userId, mastered_count: count }, { onConflict: "topic_id" });
+  if (error) throw new Error(`setting the mastered tally of ${topicId} failed: ${error.message}`);
+}
+
 // Copy of batchAllocation in src/lib/topics/flashcards-task.ts (node cannot import the TS
 // file); keep the two in step.
 function batchAllocation(percents) {
@@ -392,8 +401,12 @@ try {
     cookie: a.cookie,
   });
   check(
-    "a wrong answer leaves the card due",
-    r.status === 200 && r.json?.data?.correct === false && r.json?.data?.stage === "choice",
+    "a wrong answer leaves the card due and earns no badge",
+    r.status === 200 &&
+      r.json?.data?.correct === false &&
+      r.json?.data?.stage === "choice" &&
+      Array.isArray(r.json?.data?.badges) &&
+      r.json.data.badges.length === 0,
     describe(r),
   );
   r = await api(study, { method: "GET", cookie: a.cookie });
@@ -528,11 +541,33 @@ try {
       stored.due_on > today,
     `${describe(r)}; card ${JSON.stringify(stored)}`,
   );
+  // Badges (S-10): nine cards mastered before (the historical tally, set with the service key),
+  // so mastering this one crosses the 10-card threshold and the answer returns the badge.
   await makeDue(studied?.id, today);
-  r = await open("Znowu poprawnie: grupa kontenerów.");
+  await setMasteredTally(topicId, a.userId, 9);
+  const masteringAttempt = randomUUID();
+  r = await open("Znowu poprawnie: grupa kontenerów.", masteringAttempt);
+  const masteringResult = r.json?.data;
+  const badges = masteringResult?.badges ?? [];
   check(
-    "a second correct open answer masters the card",
-    r.status === 200 && r.json?.data?.correct === true && r.json?.data?.stage === "mastered",
+    "a second correct open answer masters the card and earns the 10-card badge",
+    r.status === 200 &&
+      masteringResult?.correct === true &&
+      masteringResult?.stage === "mastered" &&
+      badges.length === 1 &&
+      badges[0]?.kind === "mastered_cards" &&
+      badges[0]?.threshold === 10 &&
+      badges[0]?.topicId === null &&
+      typeof badges[0]?.awardedAt === "string",
+    describe(r),
+  );
+  const gradedBefore = await gradings(a.userId);
+  r = await open("Znowu poprawnie: grupa kontenerów.", masteringAttempt);
+  check(
+    "a retried mastering attempt returns the same badges without grading again",
+    r.status === 200 &&
+      JSON.stringify(r.json?.data) === JSON.stringify(masteringResult) &&
+      (await gradings(a.userId)) === gradedBefore,
     describe(r),
   );
   r = await api(study, { method: "GET", cookie: a.cookie });

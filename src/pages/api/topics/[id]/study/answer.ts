@@ -13,7 +13,8 @@ import {
 
 // Records one answer and returns its result: A/B/C/D (`choice`) or the user's own words
 // graded by AI (`open`). Unlike other mutations it does not return the full state: the queue
-// is the client's, since a wrong A/B/C/D card comes back in the same session.
+// is the client's, since a wrong A/B/C/D card comes back in the same session. Every result,
+// a replayed attempt's too, carries `badges`: the ones the database awarded to this attempt.
 export const POST: APIRoute = async (context) => {
   const session = requireSession(context);
   if (session instanceof Response) return session;
