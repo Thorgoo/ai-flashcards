@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(42);
+select plan(51);
 
 -- Two accounts (email sign-up is disabled, so users are inserted directly).
 insert into auth.users (id, email)
@@ -107,6 +107,14 @@ set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", 
 select public.answer_flashcard_open(
   current_setting('test.a_open_card')::uuid, '00000000-0000-0000-0000-000000000f03', 'a-open-answer', false, 'a-feedback'
 );
+-- A badge and a mastery tally (written only by sync_badges from triggers; here as the owner role).
+reset role;
+insert into public.badges (user_id, kind, threshold)
+values ('00000000-0000-0000-0000-00000000000a', 'streak', 3);
+insert into public.topic_mastery_tallies (topic_id, user_id, mastered_count)
+values ('00000000-0000-0000-0000-0000000000a3', '00000000-0000-0000-0000-00000000000a', 1);
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
 
 select is(
   (select user_id from public.isolation_probe),
@@ -208,6 +216,25 @@ select throws_ok(
   'flashcard_not_found',
   'account B cannot answer A''s open flashcard'
 );
+select is((select count(*) from public.badges), 0::bigint, 'account B sees none of A''s badges');
+select throws_ok($$ update public.badges set threshold = 7 $$, '42501', null, 'account B cannot edit badges directly');
+select throws_ok($$ delete from public.badges $$, '42501', null, 'account B cannot delete badges directly');
+select throws_ok(
+  $$ insert into public.badges (user_id, kind, threshold) values ('00000000-0000-0000-0000-00000000000a', 'streak', 7) $$,
+  '42501',
+  null,
+  'account B cannot insert a badge owned by A'
+);
+select is((select count(*) from public.topic_mastery_tallies), 0::bigint, 'account B sees none of A''s mastery tallies');
+select throws_ok($$ update public.topic_mastery_tallies set mastered_count = 0 $$, '42501', null, 'account B cannot edit mastery tallies directly');
+select throws_ok($$ delete from public.topic_mastery_tallies $$, '42501', null, 'account B cannot delete mastery tallies directly');
+select throws_ok(
+  $$ insert into public.topic_mastery_tallies (topic_id, user_id, mastered_count)
+     values ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-00000000000a', 5) $$,
+  '42501',
+  null,
+  'account B cannot insert a mastery tally owned by A'
+);
 select lives_ok(
   $$ update public.isolation_probe set note = 'b-was-here' $$,
   'account B update runs without error'
@@ -255,6 +282,12 @@ select results_eq(
             ('choice'::text, true, null::text, 'open'::text, 0),
             ('open'::text, false, 'a-open-answer'::text, 'open'::text, 0) $$,
   'account A flashcard answers and study state are unchanged after account B'
+);
+select results_eq(
+  $$ select b.kind, b.threshold, m.topic_id, m.mastered_count
+     from public.badges b cross join public.topic_mastery_tallies m $$,
+  $$ values ('streak'::text, 3, '00000000-0000-0000-0000-0000000000a3'::uuid, 1) $$,
+  'account A badge and mastery tally are unchanged after account B'
 );
 
 -- Anonymous callers have no privileges on app tables at all (migration revoke_anon_default_privileges).
