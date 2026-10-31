@@ -1,3 +1,4 @@
+import { daysLabel } from "@/lib/badges/catalog";
 import type { ContentType } from "@/lib/topics/schemas";
 import type { StudyStreak, TopicStatus } from "@/lib/topics/repository";
 
@@ -35,7 +36,7 @@ export function lastSessionLabel(date: string | null): string {
 
 // The streak tile on the home screen: "1 dzień", every other count "dni".
 export function streakLabel(days: number): string {
-  return `Seria: ${days} ${days === 1 ? "dzień" : "dni"}`;
+  return `Seria: ${daysLabel(days)}`;
 }
 
 // The hint under the streak; none once the account has studied today.

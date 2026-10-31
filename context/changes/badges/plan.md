@@ -255,19 +255,19 @@ Migracja uzupełnia liczniki z obecnych fiszek `mastered` i przyznaje odznaki z 
 
 #### Automated
 
-- [ ] 1.1 CI „Database tests” przechodzi: `npm run db:test` (nowy `badges.test.sql`, rozszerzony `account_isolation.test.sql`, `rls_guard.test.sql`, niezmieniony `study_streak.test.sql`)
-- [x] 1.2 `npm run lint` i `npm test` przechodzą
+- [x] 1.1 CI „Database tests” przechodzi: `npm run db:test` (nowy `badges.test.sql`, rozszerzony `account_isolation.test.sql`, `rls_guard.test.sql`, niezmieniony `study_streak.test.sql`) — 15797c8
+- [x] 1.2 `npm run lint` i `npm test` przechodzą — 15797c8
 
 #### Manual
 
-- [ ] 1.3 Człowiek wykonuje `npx supabase db push`; na produkcji konto testowe ma odznaki zgodne ze stanem sprzed migracji (zapytanie w Supabase Studio)
+- [x] 1.3 Człowiek wykonuje `npx supabase db push`; na produkcji konto testowe ma odznaki zgodne ze stanem sprzed migracji (zapytanie w Supabase Studio)
 
 ### Phase 2: Serwer
 
 #### Automated
 
-- [ ] 2.1 `npm test` przechodzi (nowy `catalog.test.ts`)
-- [ ] 2.2 `npm run lint` i `npm run build` przechodzą
+- [x] 2.1 `npm test` przechodzi (nowy `catalog.test.ts`)
+- [x] 2.2 `npm run lint` i `npm run build` przechodzą
 - [ ] 2.3 CI `npm run smoke:topics` przechodzi z nowymi asercjami odznak
 
 #### Manual
