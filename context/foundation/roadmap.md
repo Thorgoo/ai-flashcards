@@ -52,7 +52,7 @@ Osoba ucząca się zawodowo kilku tematów naraz zdobywa wiedzę ad-hoc (np. w r
 | S-07 | next-batch-and-subtopic-mastery | user can zobaczyć opanowanie per podtemat i po 80% partii wygenerować kolejną ze słabych, nieopanowanych podtematów                       | S-06          | US-01, FR-019, FR-020                                                 | done        |
 | S-08 | home-screen-and-topic-archive   | user can zobaczyć ekran główny z zaległymi fiszkami i datą ostatniej sesji per temat oraz zmienić nazwę, zarchiwizować i przywrócić temat | S-05          | FR-007, FR-021                                                        | done        |
 | S-09 | daily-streak                    | user can widzieć licznik serii dni nauki                                                                                                  | S-05          | FR-023                                                                | done        |
-| S-10 | badges                          | user can zdobywać odznaki za serię dni, opanowanie tematu i liczbę opanowanych fiszek oraz je przeglądać                                  | S-07, S-09    | FR-024, FR-025, FR-026, FR-027                                        | proposed    |
+| S-10 | badges                          | user can zdobywać odznaki za serię dni, opanowanie tematu i liczbę opanowanych fiszek oraz je przeglądać                                  | S-07, S-09    | FR-024, FR-025, FR-026, FR-027                                        | in-progress |
 
 ## Streams
 
@@ -235,7 +235,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Dokładne progi odznak (PRD Open Question 1); start z progami tymczasowymi. — Owner: user. Block: no.
 - **Risk:** Ostatni, bo konsumuje opanowanie (S-06, S-07) i serię (S-09); przy presji czasu to pierwszy kandydat do przesunięcia — świadomie, bo PRD trzyma go poza rdzeniem przepływu.
-- **Status:** proposed
+- **Status:** in-progress
 
 ## Backlog Handoff
 
