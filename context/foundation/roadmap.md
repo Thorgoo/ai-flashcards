@@ -3,7 +3,7 @@ project: AI Flashcards
 version: 1
 status: draft
 created: 2026-10-05
-updated: 2026-10-30
+updated: 2026-10-31
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -51,7 +51,7 @@ Osoba ucząca się zawodowo kilku tematów naraz zdobywa wiedzę ad-hoc (np. w r
 | S-06 | ai-graded-open-answers          | user can odpowiadać otwarcie, dostać ocenę AI i opanować fiszkę po dwóch poprawnych odpowiedziach w różne dni                             | S-05          | US-01, FR-015, FR-016, FR-017, FR-018, FR-028                         | done        |
 | S-07 | next-batch-and-subtopic-mastery | user can zobaczyć opanowanie per podtemat i po 80% partii wygenerować kolejną ze słabych, nieopanowanych podtematów                       | S-06          | US-01, FR-019, FR-020                                                 | done        |
 | S-08 | home-screen-and-topic-archive   | user can zobaczyć ekran główny z zaległymi fiszkami i datą ostatniej sesji per temat oraz zmienić nazwę, zarchiwizować i przywrócić temat | S-05          | FR-007, FR-021                                                        | done        |
-| S-09 | daily-streak                    | user can widzieć licznik serii dni nauki                                                                                                  | S-05          | FR-023                                                                | in-progress |
+| S-09 | daily-streak                    | user can widzieć licznik serii dni nauki                                                                                                  | S-05          | FR-023                                                                | done        |
 | S-10 | badges                          | user can zdobywać odznaki za serię dni, opanowanie tematu i liczbę opanowanych fiszek oraz je przeglądać                                  | S-07, S-09    | FR-024, FR-025, FR-026, FR-027                                        | proposed    |
 
 ## Streams
@@ -222,7 +222,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Co wyznacza granicę „dnia” — patrz Open Roadmap Question 3. Owner: user. Block: no.
 - **Risk:** Poza rdzeniem przepływu (PRD § Secondary), więc w osobnej ścieżce; jest podstawą odznak za serię w S-10.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-10: Odznaki
 
@@ -290,3 +290,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-06: user can odpowiedzieć 2–3 zdaniami na fiszkę w formacie otwartym, dostać ocenę AI poprawna/błędna, po błędzie zobaczyć poprawną odpowiedź i reset licznika (bez powrotu do A/B/C/D), a po dwóch poprawnych odpowiedziach w różne dni mieć fiszkę opanowaną; przy błędzie oceny wpisana odpowiedź zostaje i można ją wysłać ponownie.** — Archived 2026-10-29 → `context/archive/2026-10-28-ai-graded-open-answers/`. Lesson: —.
 - **S-07: user can zobaczyć opanowanie per podtemat (opanowany = wszystkie jego fiszki ze wszystkich partii opanowane) i po opanowaniu 80% bieżącej partii wygenerować przyciskiem kolejną partię dla tego lub następnego najsłabszego nieopanowanego podtematu, z pominięciem opanowanych.** — Archived 2026-10-29 → `context/archive/2026-10-29-next-batch-and-subtopic-mastery/`. Lesson: —.
 - **S-08: user can zobaczyć ekran główny z listą tematów, liczbą zaległych fiszek i datą ostatniej sesji per temat oraz zmienić nazwę tematu, zarchiwizować go (po potwierdzeniu, bez usuwania danych) i przywrócić.** — Archived 2026-10-30 → `context/archive/2026-10-30-home-screen-and-topic-archive/`. Lesson: —.
+- **S-09: user can widzieć licznik serii dni, w których wykonał powtórki.** — Archived 2026-10-31 → `context/archive/2026-10-30-daily-streak/`. Lesson: —.
