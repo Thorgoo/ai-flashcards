@@ -40,6 +40,11 @@ export const POST: APIRoute = async (context) => {
   if (!preflight.ok) return topicErrorResponse(preflight.code);
   if (preflight.value.kind === "replay") return Response.json({ data: preflight.value.result });
 
+  // BREAK-CHECK (reverted): save before grading.
+  await answerFlashcardOpen(session.supabase, input.cardId, input.attemptId, input.answerText, {
+    correct: false,
+    feedback: "break-check",
+  });
   const ai = getAi(session.supabase, session.user);
   const grading = await ai.call(buildGradingRequest(preflight.value.card, input.answerText));
   if (!grading.ok) return aiResponse(grading, ai.mode);
