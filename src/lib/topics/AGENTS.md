@@ -16,6 +16,7 @@
 - "Today" is the Europe/Warsaw date: `@study-day.ts` for reads, the database for writes.
 - Deleting a card sets `flashcard_answers.flashcard_id` to null and keeps the answer; only deleting the topic or the account removes the log.
 - The daily streak comes only from `study_streak()` (a day = ≥1 flashcard answer on an active topic, Warsaw date); S-10 reads it there, never counts its own.
+- Badges are awarded only by `sync_badges` from the database triggers; never insert them from TS. The thresholds live in the badges migration and `@../badges/catalog.ts`; change both together.
 
 ## Endpoints
 

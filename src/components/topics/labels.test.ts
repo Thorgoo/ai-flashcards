@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dueLabel, lastSessionLabel, streakHint, streakLabel } from "./labels";
+import { awardedLabel, dueLabel, lastSessionLabel, streakHint, streakLabel } from "./labels";
 
 describe("dueLabel", () => {
   it.each([
@@ -7,6 +7,14 @@ describe("dueLabel", () => {
     [7, "Do powtórki: 7"],
   ])("%i → %s", (count, expected) => {
     expect(dueLabel(count)).toBe(expected);
+  });
+});
+
+describe("awardedLabel", () => {
+  it("formats the Warsaw day of the timestamp", () => {
+    expect(awardedLabel("2026-01-05T10:00:00+00:00")).toBe("Zdobyta 05.01.2026");
+    // 23:30 UTC is already the next day in Warsaw.
+    expect(awardedLabel("2025-12-31T23:30:00Z")).toBe("Zdobyta 01.01.2026");
   });
 });
 

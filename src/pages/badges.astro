@@ -1,0 +1,86 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import { Badge } from "@/components/ui/badge";
+import { Flame, Layers, Trophy } from "lucide-react";
+import { awardedLabel } from "@/components/topics/labels";
+import { badgeBoard, badgeLabel, type ThresholdBadgeRow } from "@/lib/badges/catalog";
+import { getBadgeOverview } from "@/lib/badges/repository";
+import { createClient } from "@/lib/supabase";
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+const overview = supabase ? await getBadgeOverview(supabase) : { streakDays: 0, masteredCards: 0, earned: [] };
+const board = badgeBoard(overview);
+
+const sections: { title: string; icon: typeof Flame; rows: ThresholdBadgeRow[] }[] = [
+  { title: "Seria dni", icon: Flame, rows: board.streak },
+  { title: "Opanowane fiszki", icon: Layers, rows: board.masteredCards },
+];
+---
+
+<Layout title="Odznaki">
+  <div class="dark bg-background text-foreground min-h-screen">
+    <main class="mx-auto max-w-2xl p-4">
+      <Topbar />
+      <h1 class="mb-4 text-2xl font-semibold">Odznaki</h1>
+
+      <div class="space-y-6">
+        {sections.map(({ title, icon: Icon, rows }) => (
+          <section class="space-y-2">
+            <h2 class="text-lg font-medium">{title}</h2>
+            <ul class="grid gap-2">
+              {rows.map((row) => (
+                <li
+                  class:list={[
+                    "border-border bg-card flex items-center gap-3 rounded-lg border p-3",
+                    !row.earned && "text-muted-foreground",
+                  ]}
+                >
+                  <Icon
+                    className={`size-5 shrink-0 ${row.earned ? "text-success" : "text-muted-foreground"}`}
+                    aria-hidden="true"
+                  />
+                  <span class="min-w-0 flex-1 font-medium break-words">{row.label}</span>
+                  {row.earned && row.awardedAt ? (
+                    <Badge variant="outline" className="text-success">
+                      {awardedLabel(row.awardedAt)}
+                    </Badge>
+                  ) : (
+                    <span class="text-sm">
+                      <span class="sr-only">Postęp: </span>
+                      {row.progress}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-medium">Opanowane tematy</h2>
+          {board.topics.length === 0 ? (
+            <p class="text-muted-foreground text-sm">
+              Opanuj wszystkie podtematy jednego tematu, aby zdobyć tu pierwszą odznakę.
+            </p>
+          ) : (
+            <ul class="grid gap-2">
+              {board.topics.map((badge) => (
+                <li class="border-border bg-card flex items-center gap-3 rounded-lg border p-3">
+                  <Trophy className="text-success size-5 shrink-0" aria-hidden="true" />
+                  <span class="min-w-0 flex-1 font-medium break-words">
+                    {badgeLabel(badge)}
+                    {badge.topicArchived && <span class="text-muted-foreground font-normal"> (zarchiwizowany)</span>}
+                  </span>
+                  <Badge variant="outline" className="text-success">
+                    {awardedLabel(badge.awardedAt)}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </main>
+  </div>
+</Layout>

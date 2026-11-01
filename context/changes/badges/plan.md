@@ -266,13 +266,13 @@ Migracja uzupełnia liczniki z obecnych fiszek `mastered` i przyznaje odznaki z 
 
 #### Automated
 
-- [x] 2.1 `npm test` przechodzi (nowy `catalog.test.ts`)
-- [x] 2.2 `npm run lint` i `npm run build` przechodzą
-- [ ] 2.3 CI `npm run smoke:topics` przechodzi z nowymi asercjami odznak
+- [x] 2.1 `npm test` przechodzi (nowy `catalog.test.ts`) — 06ea320
+- [x] 2.2 `npm run lint` i `npm run build` przechodzą — 06ea320
+- [x] 2.3 CI `npm run smoke:topics` przechodzi z nowymi asercjami odznak — 06ea320
 
 #### Manual
 
-- [ ] 2.4 Na preview odpowiedź w sesji nauki (DevTools → Network) ma `data.badges`
+- [x] 2.4 Na preview odpowiedź w sesji nauki (DevTools → Network) ma `data.badges`
 
 ### Phase 3: UI
 
