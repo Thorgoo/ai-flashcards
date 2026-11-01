@@ -334,25 +334,25 @@ Brak migracji bazy. Zmiana fixtury działa wyłącznie w trybie fake (lokalny Su
 
 #### Automated
 
-- [x] 1.1 `npm test` przechodzi, w tym nowe przypadki fail-once w `grading-task.test.ts` — ccb6601
-- [x] 1.2 `npm run lint` i `npx astro check` przechodzą — ccb6601
-- [x] 1.3 Usunięcie zapamiętania tekstu (fixture zawodzi zawsze) czerwieni test „drugie wywołanie zwraca werdykt” — ccb6601
+- [x] 1.1 `npm test` przechodzi, w tym nowe przypadki fail-once w `grading-task.test.ts` — d1ec197
+- [x] 1.2 `npm run lint` i `npx astro check` przechodzą — d1ec197
+- [x] 1.3 Usunięcie zapamiętania tekstu (fixture zawodzi zawsze) czerwieni test „drugie wywołanie zwraca werdykt” — d1ec197
 
 ### Phase 2: Integracja ryzyka #5 w smoke-topics
 
 #### Automated
 
-- [x] 2.1 Job `smoke` w CI przechodzi z nowymi krokami „a failed grading …” i „a retried failed grading …” — 83fa60a
-- [x] 2.2 Lokalnie `npm run smoke:topics` (przy preview na fake AI i lokalnym Supabase) wypisuje nowe kroki jako PASS — 83fa60a
-- [x] 2.3 Przeniesienie wywołania `answerFlashcardOpen` przed ocenę AI w `study/answer.ts` (celowe zepsucie, niecommitowane) czerwieni krok „a failed grading leaves the card unchanged” — 83fa60a
+- [x] 2.1 Job `smoke` w CI przechodzi z nowymi krokami „a failed grading …” i „a retried failed grading …” — d1ec197
+- [x] 2.2 Lokalnie `npm run smoke:topics` (przy preview na fake AI i lokalnym Supabase) wypisuje nowe kroki jako PASS — d1ec197
+- [x] 2.3 Przeniesienie wywołania `answerFlashcardOpen` przed ocenę AI w `study/answer.ts` (celowe zepsucie, niecommitowane) czerwieni krok „a failed grading leaves the card unchanged” — d1ec197
 
 ### Phase 3: Infrastruktura Playwright
 
 #### Automated
 
-- [x] 3.1 `npm run lint` i `npx astro check` przechodzą z nowymi plikami TS — 34f860f
-- [x] 3.2 `npm test` nadal uruchamia tylko `src/**/*.test.ts` (vitest nie zbiera `e2e/`) — 34f860f
-- [x] 3.3 `npm run e2e` lokalnie: projekt `setup` przechodzi, a `/dashboard` otwiera się zalogowany — 34f860f
+- [x] 3.1 `npm run lint` i `npx astro check` przechodzą z nowymi plikami TS — d1ec197
+- [x] 3.2 `npm test` nadal uruchamia tylko `src/**/*.test.ts` (vitest nie zbiera `e2e/`) — d1ec197
+- [x] 3.3 `npm run e2e` lokalnie: projekt `setup` przechodzi, a `/dashboard` otwiera się zalogowany — d1ec197
 
 #### Manual
 
@@ -364,28 +364,28 @@ Brak migracji bazy. Zmiana fixtury działa wyłącznie w trybie fake (lokalny Su
 
 #### Automated
 
-- [x] 4.1 `npm run e2e` przechodzi test pętli lokalnie — 3ec8bf8
-- [x] 4.2 Celowe zepsucie (niecommitowane): usunięcie `history.replaceState`/auto-startu w `QuizRunner.tsx` albo zmiana linku „Ucz się” czerwieni test z czytelnym trace — 3ec8bf8
+- [x] 4.1 `npm run e2e` przechodzi test pętli lokalnie — d1ec197
+- [x] 4.2 Celowe zepsucie (niecommitowane): usunięcie `history.replaceState`/auto-startu w `QuizRunner.tsx` albo zmiana linku „Ucz się” czerwieni test z czytelnym trace — d1ec197
 
 #### Manual
 
-- [x] 4.3 Trace z porażki (`npx playwright show-trace`) pokazuje krok, na którym pętla stanęła — 3ec8bf8
+- [x] 4.3 Trace z porażki (`npx playwright show-trace`) pokazuje krok, na którym pętla stanęła — d1ec197
 
 ### Phase 5: E2E kroku błędu oceny (ryzyko #5)
 
 #### Automated
 
-- [x] 5.1 `npm run e2e` przechodzi oba testy lokalnie — a87f27e
-- [x] 5.2 Celowe zepsucie (niecommitowane): czyszczenie `text`/`attempt` w `failed()` w `StudySession.tsx` czerwieni asercję pola; generowanie nowego `attemptId` w `retry()` czerwieni asercję „1 wiersz odpowiedzi” — a87f27e
+- [x] 5.1 `npm run e2e` przechodzi oba testy lokalnie — d1ec197
+- [x] 5.2 Celowe zepsucie (niecommitowane): czyszczenie `text`/`attempt` w `failed()` w `StudySession.tsx` czerwieni asercję pola; generowanie nowego `attemptId` w `retry()` czerwieni asercję „1 wiersz odpowiedzi” — d1ec197
 
 ### Phase 6: CI i aktualizacja test-planu
 
 #### Automated
 
-- [x] 6.1 Job `smoke` na PR przechodzi z krokiem e2e — 2dda55a
-- [x] 6.2 Job `ci` (lint, vitest, `astro check`, build) przechodzi — 2dda55a
+- [x] 6.1 Job `smoke` na PR przechodzi z krokiem e2e — d1ec197
+- [x] 6.2 Job `ci` (lint, vitest, `astro check`, build) przechodzi — d1ec197
 
 #### Manual
 
-- [x] 6.3 Celowo czerwony e2e na gałęzi roboczej publikuje artefakt z trace w zakładce Actions — 2dda55a
-- [x] 6.4 §5 i §6.3 test-planu opisują to, co faktycznie trafiło do repo — 2dda55a
+- [x] 6.3 Celowo czerwony e2e na gałęzi roboczej publikuje artefakt z trace w zakładce Actions — d1ec197
+- [x] 6.4 §5 i §6.3 test-planu opisują to, co faktycznie trafiło do repo — d1ec197
