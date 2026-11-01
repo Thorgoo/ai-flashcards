@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { badgeLabel, type EarnedBadge } from "@/lib/badges/catalog";
 import { OPEN_ANSWER_MAX } from "@/lib/topics/schemas";
 import type {
   ChoiceResult,
@@ -97,6 +98,8 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
   // Set by quota_exceeded: the open cards left the queue and the message stays for the session.
   const [gradingLimitHit, setGradingLimitHit] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  // The badges the last saved answer earned; shown like `notice` until the next answer.
+  const [earned, setEarned] = useState<EarnedBadge[]>([]);
   // Bumped on every move to another card; the effect below moves the focus there.
   const [step, setStep] = useState(0);
   const focusTarget = useRef<HTMLHeadingElement>(null);
@@ -150,8 +153,12 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
       answer: next.choice,
       attemptId: next.attemptId,
     });
-    if (result.ok) setAttempt({ ...next, saved: result.data, error: null });
-    else failed(next, result.error);
+    if (result.ok) {
+      setAttempt({ ...next, saved: result.data, error: null });
+      if (result.data.badges.length > 0) setEarned(result.data.badges);
+    } else {
+      failed(next, result.error);
+    }
   }
 
   async function saveOpen(next: OpenAttempt) {
@@ -166,6 +173,7 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
       // The grade is saved: the draft is no longer needed.
       removeDraft(next.cardId);
       setAttempt({ ...next, saved: result.data, error: null });
+      if (result.data.badges.length > 0) setEarned(result.data.badges);
     } else {
       failed(next, result.error);
     }
@@ -179,12 +187,14 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
   function choose(choice: number) {
     if (!card || attempt) return;
     setNotice(null);
+    setEarned([]);
     save({ format: "choice", cardId: card.id, choice, attemptId: crypto.randomUUID(), saved: null, error: null });
   }
 
   function check(answerText: string) {
     if (!card || attempt || !answerText.trim()) return;
     setNotice(null);
+    setEarned([]);
     save({ format: "open", cardId: card.id, answerText, attemptId: crypto.randomUUID(), saved: null, error: null });
   }
 
@@ -235,6 +245,28 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
       {notice && (
         <Alert role="status">
           <AlertDescription>{notice}</AlertDescription>
+        </Alert>
+      )}
+
+      {earned.length > 0 && (
+        <Alert role="status">
+          <AlertDescription>
+            {earned.length === 1 ? (
+              <p>Zdobyto odznakę: {badgeLabel(earned[0])}</p>
+            ) : (
+              <>
+                <p>Zdobyto odznaki:</p>
+                <ul className="list-disc pl-5">
+                  {earned.map((badge) => (
+                    <li key={`${badge.kind}:${badge.threshold ?? badge.topicId ?? ""}`}>{badgeLabel(badge)}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <a href="/badges" className="text-foreground underline underline-offset-4">
+              Zobacz odznaki
+            </a>
+          </AlertDescription>
         </Alert>
       )}
 

@@ -2,16 +2,17 @@
 import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import { Button } from "@/components/ui/button";
-import { Flame } from "lucide-react";
+import { Flame, Trophy } from "lucide-react";
 import HomeTopics from "@/components/topics/HomeTopics";
-import { streakHint, streakLabel } from "@/components/topics/labels";
+import { badgeCountLabel, streakHint, streakLabel } from "@/components/topics/labels";
+import { getBadgeOverview } from "@/lib/badges/repository";
 import { createClient } from "@/lib/supabase";
 import { getStudyStreak, listTopicOverview } from "@/lib/topics/repository";
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
-const [topics, streak] = supabase
-  ? await Promise.all([listTopicOverview(supabase), getStudyStreak(supabase)])
-  : [[], null];
+const [topics, streak, badges] = supabase
+  ? await Promise.all([listTopicOverview(supabase), getStudyStreak(supabase), getBadgeOverview(supabase)])
+  : [[], null, null];
 const hint = streak ? streakHint(streak) : null;
 ---
 
@@ -26,15 +27,26 @@ const hint = streak ? streakHint(streak) : null;
         </Button>
       </div>
 
-      {streak && (
-        <section class="border-border bg-card text-card-foreground mb-4 flex items-start gap-3 rounded-lg border p-3">
-          <Flame className="text-muted-foreground mt-0.5 size-5 shrink-0" aria-hidden="true" />
-          <div class="min-w-0">
-            <p class="font-medium">{streakLabel(streak.days)}</p>
-            {hint && <p class="text-muted-foreground text-sm">{hint}</p>}
-          </div>
-        </section>
-      )}
+      <div class="mb-4 grid gap-4 sm:grid-cols-2">
+        {streak && (
+          <section class="border-border bg-card text-card-foreground flex items-start gap-3 rounded-lg border p-3">
+            <Flame className="text-muted-foreground mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <div class="min-w-0">
+              <p class="font-medium">{streakLabel(streak.days)}</p>
+              {hint && <p class="text-muted-foreground text-sm">{hint}</p>}
+            </div>
+          </section>
+        )}
+        {badges && (
+          <a
+            href="/badges"
+            class="border-border bg-card text-card-foreground hover:bg-accent flex items-start gap-3 rounded-lg border p-3 transition-colors"
+          >
+            <Trophy className="text-muted-foreground mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <p class="font-medium">{badgeCountLabel(badges.earned.length)}</p>
+          </a>
+        )}
+      </div>
 
       <HomeTopics client:load topics={topics} />
     </main>

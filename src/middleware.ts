@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase";
 import { isEmailAllowed } from "@/lib/allowlist";
 
 // Pages only; API routes answer 401 themselves (src/lib/topics/http.ts).
-const PROTECTED_ROUTES = ["/dashboard", "/topics"];
+const PROTECTED_ROUTES = ["/dashboard", "/topics", "/badges"];
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const supabase = createClient(context.request.headers, context.cookies);
