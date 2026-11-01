@@ -350,9 +350,9 @@ Brak migracji bazy. Zmiana fixtury działa wyłącznie w trybie fake (lokalny Su
 
 #### Automated
 
-- [ ] 3.1 `npm run lint` i `npx astro check` przechodzą z nowymi plikami TS
-- [ ] 3.2 `npm test` nadal uruchamia tylko `src/**/*.test.ts` (vitest nie zbiera `e2e/`)
-- [ ] 3.3 `npm run e2e` lokalnie: projekt `setup` przechodzi, a `/dashboard` otwiera się zalogowany
+- [x] 3.1 `npm run lint` i `npx astro check` przechodzą z nowymi plikami TS — 34f860f
+- [x] 3.2 `npm test` nadal uruchamia tylko `src/**/*.test.ts` (vitest nie zbiera `e2e/`) — 34f860f
+- [x] 3.3 `npm run e2e` lokalnie: projekt `setup` przechodzi, a `/dashboard` otwiera się zalogowany — 34f860f
 
 #### Manual
 
