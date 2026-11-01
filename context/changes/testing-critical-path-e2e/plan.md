@@ -358,7 +358,7 @@ Brak migracji bazy. Zmiana fixtury działa wyłącznie w trybie fake (lokalny Su
 
 - [ ] 3.4 Po `npm run e2e` pliki `.env` i `.dev.vars` mają dokładnie poprzednią treść (porównanie sumy kontrolnej), plików kopii brak
 - [ ] 3.5 Przerwanie `npm run e2e` Ctrl+C w trakcie builda również przywraca oryginały
-- [ ] 3.6 Przy istniejącym pliku kopii wrapper odmawia startu z czytelnym komunikatem
+- [x] 3.6 Przy istniejącym pliku kopii wrapper odmawia startu z czytelnym komunikatem
 
 ### Phase 4: E2E pętli US-01 (ryzyko #4)
 
