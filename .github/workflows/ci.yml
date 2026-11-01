@@ -56,7 +56,7 @@ jobs:
       - name: Configure secrets for build and preview
         run: |
           source supabase.env
-          printf 'SUPABASE_URL=%s\nSUPABASE_KEY=%s\nALLOWED_EMAILS=smoke@example.com,smoke-b@example.com\nAI_MODE=fake\n' "$API_URL" "$ANON_KEY" > .env
+          printf 'SUPABASE_URL=%s\nSUPABASE_KEY=%s\nALLOWED_EMAILS=smoke@example.com,smoke-b@example.com,e2e@example.com\nAI_MODE=fake\n' "$API_URL" "$ANON_KEY" > .env
           cp .env .dev.vars
       - run: npm run build
       - name: Install Playwright Chromium
