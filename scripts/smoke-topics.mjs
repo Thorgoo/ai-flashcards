@@ -35,6 +35,24 @@ async function makeDue(id, day) {
   if (error) throw new Error(`moving card ${id} failed: ${error.message}`);
 }
 
+// Puts a card in the open format with no streak and due today, standing in for a correct
+// A/B/C/D answer and the days after it.
+async function makeOpenDue(id, day) {
+  const { error } = await admin.from("flashcards").update({ stage: "open", open_streak: 0, due_on: day }).eq("id", id);
+  if (error) throw new Error(`opening card ${id} failed: ${error.message}`);
+}
+
+// The stored open answers of an attempt (flashcard_answers rows whose id is the attemptId).
+async function answersOf(attemptId) {
+  const { data, error } = await admin.from("flashcard_answers").select("id, answer_text").eq("id", attemptId);
+  if (error) throw new Error(`reading answers of ${attemptId} failed: ${error.message}`);
+  return data;
+}
+
+// Copy of FAKE_GRADING_FAIL_ONCE in src/lib/ai/fixtures.ts (node cannot import the TS file);
+// keep the two in step. An answer containing it fails fake grading once per exact text.
+const FAKE_GRADING_FAIL_ONCE = "[fake-ai-fail-once]";
+
 // The account's AI gradings so far (ai_calls rows of kind 'grading').
 async function gradings(userId) {
   const { count, error } = await admin
@@ -578,6 +596,48 @@ try {
   );
   r = await open("Odpowiadam poprawnie.", randomUUID(), b.cookie);
   check("another account cannot give an open answer", r.status === 404, describe(r));
+
+  // A failed grading (fake AI fails once on the marker) must change nothing but the grading
+  // limit, and the same attempt retried must then be graded and saved once.
+  const retriedCard = due[1]?.id;
+  if (!retriedCard) throw new Error("the failed-grading steps need a second due card");
+  await makeOpenDue(retriedCard, today);
+  const before = await cardState(retriedCard);
+  const gradedAtStart = await gradings(a.userId);
+  const failingText = `${FAKE_GRADING_FAIL_ONCE} ${randomUUID()} odpowiadam poprawnie: obraz kontenera.`;
+  const failingAttempt = randomUUID();
+  const answerAgain = () =>
+    api(`${study}/answer`, {
+      body: { format: "open", cardId: retriedCard, answerText: failingText, attemptId: failingAttempt },
+      cookie: a.cookie,
+    });
+  r = await answerAgain();
+  const after = await cardState(retriedCard);
+  let saved = await answersOf(failingAttempt);
+  let graded = await gradings(a.userId);
+  check(
+    "a failed grading leaves the card unchanged and saves no answer",
+    r.status === 503 &&
+      r.json?.error?.code === "ai_unavailable" &&
+      r.json?.error?.retryable === true &&
+      JSON.stringify(after) === JSON.stringify(before) &&
+      saved.length === 0 &&
+      graded === gradedAtStart + 1,
+    `${describe(r)}; card ${JSON.stringify(before)} -> ${JSON.stringify(after)}; answers ${saved.length}; gradings ${gradedAtStart} -> ${graded}`,
+  );
+  r = await answerAgain();
+  saved = await answersOf(failingAttempt);
+  graded = await gradings(a.userId);
+  check(
+    "a retried failed grading is graded and saved once",
+    r.status === 200 &&
+      r.json?.data?.correct === true &&
+      typeof r.json?.data?.feedback === "string" &&
+      saved.length === 1 &&
+      saved[0].answer_text === failingText &&
+      graded === gradedAtStart + 2,
+    `${describe(r)}; answers ${JSON.stringify(saved)}; gradings ${gradedAtStart} -> ${graded}`,
+  );
 
   // Next flashcard batches (S-07): batch 2 unlocks at 80% of batch 1 mastered and covers only
   // the subtopics not mastered yet; every refusal comes before the AI call.

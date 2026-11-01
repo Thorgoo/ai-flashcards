@@ -2,7 +2,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { describe, expect, it } from "vitest";
 import { callAi, type AiQuota } from "@/lib/ai/call";
 import { createFakeProvider } from "@/lib/ai/fake";
-import { fakeFixtures } from "@/lib/ai/fixtures";
+import { FAKE_GRADING_FAIL_ONCE, fakeFixtures } from "@/lib/ai/fixtures";
 import { buildGradingRequest, GRADING_TASK, gradingSchema, type GradedCard } from "./grading-task";
 
 const quota: AiQuota = {
@@ -44,6 +44,31 @@ describe("grading task on the fake provider", () => {
 
     expect(wrong.ok && wrong.data.correct).toBe(false);
     expect(right.ok && wrong.ok && right.data.feedback !== wrong.data.feedback).toBe(true);
+  });
+
+  it("fails an answer with the fail-once marker once, then grades the same text", async () => {
+    const answer = `${FAKE_GRADING_FAIL_ONCE} poprawnie: grupa kontenerów`;
+    const first = await callAi(deps, buildGradingRequest(card, answer));
+    const second = await callAi(deps, buildGradingRequest(card, answer));
+
+    expect(first).toMatchObject({ ok: false, error: { code: "ai_unavailable", retryable: true } });
+    expect(second).toMatchObject({ ok: true, data: { correct: true } });
+  });
+
+  it("fails each new text with the marker once", async () => {
+    const one = await callAi(deps, buildGradingRequest(card, `${FAKE_GRADING_FAIL_ONCE} pierwsza`));
+    const other = await callAi(deps, buildGradingRequest(card, `${FAKE_GRADING_FAIL_ONCE} druga`));
+
+    expect(one).toMatchObject({ ok: false, error: { code: "ai_unavailable" } });
+    expect(other).toMatchObject({ ok: false, error: { code: "ai_unavailable" } });
+  });
+
+  it("never fails an answer without the marker", async () => {
+    const results = await Promise.all(
+      [1, 2].map(() => callAi(deps, buildGradingRequest(card, "fake-ai-fail-once bez nawiasów"))),
+    );
+
+    expect(results.every((result) => result.ok)).toBe(true);
   });
 
   it("is a small grading call with every card field and the user's answer inside tags", () => {

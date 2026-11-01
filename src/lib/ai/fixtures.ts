@@ -2,7 +2,7 @@ import { FLASHCARDS_TASK, NEXT_FLASHCARDS_TASK } from "@/lib/topics/flashcards-t
 import { GRADING_TASK } from "@/lib/topics/grading-task";
 import { QUIZ_TASK } from "@/lib/topics/quiz-task";
 import { SUBTOPICS_TASK } from "@/lib/topics/subtopics-task";
-import type { FakeFixture } from "./fake";
+import { FakeAiFailure, type FakeFixture } from "./fake";
 
 const LANGUAGE_TOPIC = /angielsk|niemieck|hiszpańsk|francusk|włosk|słówk|słownictw/i;
 
@@ -59,10 +59,20 @@ const flashcards: FakeFixture = (request) => {
   };
 };
 
+// An answer containing this marker fails grading once with ai_unavailable (503, retryable);
+// the same text then grades normally, so smoke and e2e can cover retrying a failed grading.
+// "Once" is per server isolate: a restarted preview fails the same text again.
+export const FAKE_GRADING_FAIL_ONCE = "[fake-ai-fail-once]";
+const failedOnce = new Set<string>();
+
 // The verdict comes from the user's answer in the prompt's <odpowiedz_uzytkownika> tag: it
 // is correct when it contains the word "poprawnie", so smoke and dev can reach both paths.
 const grading: FakeFixture = (request) => {
   const answer = /<odpowiedz_uzytkownika>([\s\S]*?)<\/odpowiedz_uzytkownika>/.exec(request.prompt)?.[1] ?? "";
+  if (answer.includes(FAKE_GRADING_FAIL_ONCE) && !failedOnce.has(answer)) {
+    failedOnce.add(answer);
+    throw new FakeAiFailure("ai_unavailable");
+  }
   const correct = /poprawnie/i.test(answer);
   return {
     correct,

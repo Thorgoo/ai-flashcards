@@ -36,3 +36,10 @@ pnpm-debug.log*
 .10x-cli.json
 skills-lock.json
 /CLAUDE.md
+
+# playwright (e2e)
+playwright-report/
+test-results/
+e2e/.auth/
+.env.e2e-backup
+.dev.vars.e2e-backup

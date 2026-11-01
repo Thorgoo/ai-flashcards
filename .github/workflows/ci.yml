@@ -56,9 +56,11 @@ jobs:
       - name: Configure secrets for build and preview
         run: |
           source supabase.env
-          printf 'SUPABASE_URL=%s\nSUPABASE_KEY=%s\nALLOWED_EMAILS=smoke@example.com,smoke-b@example.com\nAI_MODE=fake\n' "$API_URL" "$ANON_KEY" > .env
+          printf 'SUPABASE_URL=%s\nSUPABASE_KEY=%s\nALLOWED_EMAILS=smoke@example.com,smoke-b@example.com,e2e@example.com\nAI_MODE=fake\n' "$API_URL" "$ANON_KEY" > .env
           cp .env .dev.vars
       - run: npm run build
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
       - name: Run smoke test against production preview
         run: |
           npm run preview -- --port 4321 &
@@ -68,5 +70,21 @@ jobs:
           source supabase-admin.env
           BASE_URL=http://localhost:4321 SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" \
             SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" npm run smoke:topics
+      # Background processes outlive their step until the job ends, so the preview started above
+      # is reused (reuseExistingServer in CI); if it died, Playwright builds and starts its own.
+      - name: Run E2E tests against production preview
+        run: |
+          source supabase.env
+          source supabase-admin.env
+          CI=true SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" \
+            SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" npx playwright test
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
       - if: always()
         run: supabase stop --no-backup

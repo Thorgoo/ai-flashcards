@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "smoke": "node scripts/smoke.mjs",
     "smoke:topics": "node scripts/smoke-topics.mjs",
+    "e2e": "node scripts/e2e.mjs",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
     "test": "vitest run"
@@ -44,6 +45,7 @@
   "devDependencies": {
     "@eslint/compat": "^2.1.1",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.64.1",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-astro": "^3.1.0",
