@@ -278,11 +278,11 @@ Migracja uzupełnia liczniki z obecnych fiszek `mastered` i przyznaje odznaki z 
 
 #### Automated
 
-- [ ] 3.1 `npm run lint`, `npm test`, `npm run build` przechodzą
-- [ ] 3.2 CI `npm run smoke` i `npm run smoke:topics` przechodzą
+- [x] 3.1 `npm run lint`, `npm test`, `npm run build` przechodzą — 2dc5bdb
+- [x] 3.2 CI `npm run smoke` i `npm run smoke:topics` przechodzą — 2dc5bdb
 
 #### Manual
 
-- [ ] 3.3 Na produkcji (temat testowy): odpowiedź domykająca próg pokazuje komunikat w sesji; `/badges` pokazuje zdobyte z datą i niezdobyte z postępem; kafelek na dashboardzie pokazuje N i prowadzi do `/badges`
-- [ ] 3.4 Archiwizacja tematu z opanowanymi fiszkami obniża postęp na `/badges`, zdobyte odznaki zostają; przywrócenie oddaje postęp
-- [ ] 3.5 `/badges` bez sesji przekierowuje do logowania
+- [x] 3.3 Na produkcji (temat testowy): odpowiedź domykająca próg pokazuje komunikat w sesji; `/badges` pokazuje zdobyte z datą i niezdobyte z postępem; kafelek na dashboardzie pokazuje N i prowadzi do `/badges`
+- [x] 3.4 Archiwizacja tematu z opanowanymi fiszkami obniża postęp na `/badges`, zdobyte odznaki zostają; przywrócenie oddaje postęp
+- [x] 3.5 `/badges` bez sesji przekierowuje do logowania
