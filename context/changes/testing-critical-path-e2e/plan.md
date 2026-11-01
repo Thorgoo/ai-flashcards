@@ -342,9 +342,9 @@ Brak migracji bazy. Zmiana fixtury działa wyłącznie w trybie fake (lokalny Su
 
 #### Automated
 
-- [ ] 2.1 Job `smoke` w CI przechodzi z nowymi krokami „a failed grading …” i „a retried failed grading …”
-- [ ] 2.2 Lokalnie `npm run smoke:topics` (przy preview na fake AI i lokalnym Supabase) wypisuje nowe kroki jako PASS
-- [ ] 2.3 Przeniesienie wywołania `answerFlashcardOpen` przed ocenę AI w `study/answer.ts` (celowe zepsucie, niecommitowane) czerwieni krok „a failed grading leaves the card unchanged”
+- [x] 2.1 Job `smoke` w CI przechodzi z nowymi krokami „a failed grading …” i „a retried failed grading …” — 83fa60a
+- [x] 2.2 Lokalnie `npm run smoke:topics` (przy preview na fake AI i lokalnym Supabase) wypisuje nowe kroki jako PASS — 83fa60a
+- [x] 2.3 Przeniesienie wywołania `answerFlashcardOpen` przed ocenę AI w `study/answer.ts` (celowe zepsucie, niecommitowane) czerwieni krok „a failed grading leaves the card unchanged” — 83fa60a
 
 ### Phase 3: Infrastruktura Playwright
 
