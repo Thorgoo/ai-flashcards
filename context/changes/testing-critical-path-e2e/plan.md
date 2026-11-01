@@ -364,12 +364,12 @@ Brak migracji bazy. Zmiana fixtury działa wyłącznie w trybie fake (lokalny Su
 
 #### Automated
 
-- [ ] 4.1 `npm run e2e` przechodzi test pętli lokalnie
-- [ ] 4.2 Celowe zepsucie (niecommitowane): usunięcie `history.replaceState`/auto-startu w `QuizRunner.tsx` albo zmiana linku „Ucz się” czerwieni test z czytelnym trace
+- [x] 4.1 `npm run e2e` przechodzi test pętli lokalnie — 3ec8bf8
+- [x] 4.2 Celowe zepsucie (niecommitowane): usunięcie `history.replaceState`/auto-startu w `QuizRunner.tsx` albo zmiana linku „Ucz się” czerwieni test z czytelnym trace — 3ec8bf8
 
 #### Manual
 
-- [ ] 4.3 Trace z porażki (`npx playwright show-trace`) pokazuje krok, na którym pętla stanęła
+- [x] 4.3 Trace z porażki (`npx playwright show-trace`) pokazuje krok, na którym pętla stanęła — 3ec8bf8
 
 ### Phase 5: E2E kroku błędu oceny (ryzyko #5)
 

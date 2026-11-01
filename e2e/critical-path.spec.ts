@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import { FAKE_GRADING_FAIL_ONCE } from "../src/lib/ai/fixtures";
+import { admin, answerRows, cardState, e2eUserId, gradings, warsawDate } from "./support/supabase";
 
 // The learning loop a new user goes through, driven only by what the user clicks: a topic, its
 // generated subtopics, the diagnostic quiz, the first flashcard batch and the study session.
@@ -78,5 +80,65 @@ test.describe.serial("critical path", () => {
     await expectNotBlocked(page);
     await expect(page.getByRole("heading", { level: 1, name: /: fiszka \d+$/ })).toBeVisible();
     await expect(page.getByText("Pozostało: 10", { exact: true })).toBeVisible();
+  });
+
+  test("a failed grading keeps the typed answer and its retry is graded and saved once", async ({ page }) => {
+    // One card of the loop's topic becomes an open card due yesterday, so it leads the queue.
+    const { data: card, error } = await admin()
+      .from("flashcards")
+      .select("id, front")
+      .eq("topic_id", topicId)
+      .order("id")
+      .limit(1)
+      .single<{ id: string; front: string }>();
+    if (error) throw new Error(`picking a card of topic ${topicId} failed: ${error.message}`);
+    const { error: openError } = await admin()
+      .from("flashcards")
+      .update({ stage: "open", open_streak: 0, due_on: warsawDate(-1) })
+      .eq("id", card.id);
+    if (openError) throw new Error(`opening card ${card.id} failed: ${openError.message}`);
+
+    const userId = await e2eUserId();
+    const before = await cardState(card.id);
+    const gradedAtStart = await gradings(userId);
+    // The marker fails fake grading once per exact text and server process; the smoke script in
+    // the same CI job uses it too, hence the random part. "poprawnie" makes the verdict correct.
+    const answerText = `${FAKE_GRADING_FAIL_ONCE} ${randomUUID()} odpowiadam poprawnie.`;
+
+    await page.goto(`/topics/${topicId}/study`);
+    await expectNotBlocked(page);
+    await expect(page.getByRole("heading", { level: 1, name: card.front, exact: true })).toBeVisible();
+    await expect(page.getByText("Odpowiedź otwarta · 0/2", { exact: true })).toBeVisible();
+
+    // Same fill-until-enabled guard as the topic form: a value typed before hydration is lost.
+    const field = page.getByLabel("Twoja odpowiedź", { exact: true });
+    const check = page.getByRole("button", { name: "Sprawdź", exact: true });
+    await expect(async () => {
+      await field.fill(answerText);
+      await expect(check).toBeEnabled({ timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
+    await check.click();
+
+    // The failure: the sent text stays, read-only, with a retry; only the grading limit moved.
+    const retry = page.getByRole("button", { name: "Spróbuj ponownie", exact: true });
+    await expect(retry).toBeVisible();
+    await expect(field).toHaveValue(answerText);
+    await expect(field).not.toBeEditable();
+    expect(await cardState(card.id)).toEqual(before);
+    expect(await answerRows(card.id)).toHaveLength(0);
+    expect(await gradings(userId)).toBe(gradedAtStart + 1);
+
+    // The retry grades the same text under the same attempt: one answer row, two gradings.
+    await retry.click();
+    await expect(page.getByText("Dobrze", { exact: true })).toBeVisible();
+    await expect(page.getByText("Trafnie oddajesz sedno wzorcowej odpowiedzi.", { exact: true })).toBeVisible();
+    await expect(retry).toHaveCount(0);
+    await expect(field).toHaveValue(answerText);
+    const rows = await answerRows(card.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ format: "open", answer_text: answerText, correct: true });
+    expect(await gradings(userId)).toBe(gradedAtStart + 2);
+    // A first correct open answer: streak 0 -> 1, due again in three days.
+    expect(await cardState(card.id)).toEqual({ stage: "open", open_streak: 1, due_on: warsawDate(3) });
   });
 });
