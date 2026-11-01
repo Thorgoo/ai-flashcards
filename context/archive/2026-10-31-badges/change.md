@@ -1,10 +1,10 @@
 ---
 change_id: badges
 title: Badges
-status: implemented
+status: archived
 created: 2026-10-31
 updated: 2026-11-01
-archived_at: null
+archived_at: 2026-11-01T10:02:09Z
 ---
 
 ## Notes

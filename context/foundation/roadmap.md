@@ -3,7 +3,7 @@ project: AI Flashcards
 version: 1
 status: draft
 created: 2026-10-05
-updated: 2026-10-31
+updated: 2026-11-01
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -52,7 +52,7 @@ Osoba ucząca się zawodowo kilku tematów naraz zdobywa wiedzę ad-hoc (np. w r
 | S-07 | next-batch-and-subtopic-mastery | user can zobaczyć opanowanie per podtemat i po 80% partii wygenerować kolejną ze słabych, nieopanowanych podtematów                       | S-06          | US-01, FR-019, FR-020                                                 | done        |
 | S-08 | home-screen-and-topic-archive   | user can zobaczyć ekran główny z zaległymi fiszkami i datą ostatniej sesji per temat oraz zmienić nazwę, zarchiwizować i przywrócić temat | S-05          | FR-007, FR-021                                                        | done        |
 | S-09 | daily-streak                    | user can widzieć licznik serii dni nauki                                                                                                  | S-05          | FR-023                                                                | done        |
-| S-10 | badges                          | user can zdobywać odznaki za serię dni, opanowanie tematu i liczbę opanowanych fiszek oraz je przeglądać                                  | S-07, S-09    | FR-024, FR-025, FR-026, FR-027                                        | in-progress |
+| S-10 | badges                          | user can zdobywać odznaki za serię dni, opanowanie tematu i liczbę opanowanych fiszek oraz je przeglądać                                  | S-07, S-09    | FR-024, FR-025, FR-026, FR-027                                        | done        |
 
 ## Streams
 
@@ -235,7 +235,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Dokładne progi odznak (PRD Open Question 1); start z progami tymczasowymi. — Owner: user. Block: no.
 - **Risk:** Ostatni, bo konsumuje opanowanie (S-06, S-07) i serię (S-09); przy presji czasu to pierwszy kandydat do przesunięcia — świadomie, bo PRD trzyma go poza rdzeniem przepływu.
-- **Status:** in-progress
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -291,3 +291,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-07: user can zobaczyć opanowanie per podtemat (opanowany = wszystkie jego fiszki ze wszystkich partii opanowane) i po opanowaniu 80% bieżącej partii wygenerować przyciskiem kolejną partię dla tego lub następnego najsłabszego nieopanowanego podtematu, z pominięciem opanowanych.** — Archived 2026-10-29 → `context/archive/2026-10-29-next-batch-and-subtopic-mastery/`. Lesson: —.
 - **S-08: user can zobaczyć ekran główny z listą tematów, liczbą zaległych fiszek i datą ostatniej sesji per temat oraz zmienić nazwę tematu, zarchiwizować go (po potwierdzeniu, bez usuwania danych) i przywrócić.** — Archived 2026-10-30 → `context/archive/2026-10-30-home-screen-and-topic-archive/`. Lesson: —.
 - **S-09: user can widzieć licznik serii dni, w których wykonał powtórki.** — Archived 2026-10-31 → `context/archive/2026-10-30-daily-streak/`. Lesson: —.
+- **S-10: user can otrzymać odznaki za kamienie milowe serii dni, za 100% opanowania podtematów tematu i za łączną liczbę opanowanych fiszek (licznik historyczny — nie maleje po usunięciu fiszki) oraz przeglądać zdobyte odznaki.** — Archived 2026-11-01 → `context/archive/2026-10-31-badges/`. Lesson: —.
