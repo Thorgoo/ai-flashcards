@@ -61,6 +61,7 @@ const flashcards: FakeFixture = (request) => {
 
 // An answer containing this marker fails grading once with ai_unavailable (503, retryable);
 // the same text then grades normally, so smoke and e2e can cover retrying a failed grading.
+// "Once" is per server isolate: a restarted preview fails the same text again.
 export const FAKE_GRADING_FAIL_ONCE = "[fake-ai-fail-once]";
 const failedOnce = new Set<string>();
 

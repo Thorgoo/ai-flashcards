@@ -9,10 +9,11 @@ import { copyFileSync, existsSync, renameSync, rmSync, writeFileSync } from "nod
 const FILES = [".env", ".dev.vars"];
 const backupOf = (file) => `${file}.e2e-backup`;
 // npx is a .cmd shim on Windows and needs a shell there; the shell gets one command line (Node
-// deprecates separate args with shell: true), arguments with spaces or shell characters quoted.
+// deprecates separate args with shell: true). Only fixed arguments go through it: Playwright,
+// which gets the user's arguments, runs from its CLI file with node and no shell.
 const isWindows = process.platform === "win32";
-const quote = (arg) => (/[\s"&|<>^%]/.test(arg) ? `"${arg.replaceAll('"', '""')}"` : arg);
-const npx = (args) => (isWindows ? [["npx", ...args].map(quote).join(" "), []] : ["npx", args]);
+const npx = (args) => (isWindows ? [["npx", ...args].join(" "), []] : ["npx", args]);
+const PLAYWRIGHT_CLI = "node_modules/@playwright/test/cli.js";
 
 const leftover = FILES.filter((file) => existsSync(backupOf(file)));
 if (leftover.length > 0) {
@@ -46,8 +47,11 @@ const contents = `${Object.entries(appEnv)
   .map(([name, value]) => `${name}=${value}`)
   .join("\n")}\n`;
 
-// Which files existed before the run (and so were backed up); the others are removed afterwards.
+// Which files existed before the run (and so were backed up), and which this run wrote. Only a
+// file written here without a backup is removed afterwards: a failure before the write (a backup
+// that could not be made, a busy file) never touches the original.
 const backedUp = new Set();
+const written = new Set();
 let restored = false;
 function restore() {
   if (restored) return;
@@ -55,7 +59,7 @@ function restore() {
   for (const file of FILES) {
     if (backedUp.has(file)) {
       renameSync(backupOf(file), file);
-    } else {
+    } else if (written.has(file)) {
       rmSync(file, { force: true });
     }
   }
@@ -64,9 +68,10 @@ function restore() {
 let child;
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => {
-    // Playwright gets the signal too; restore once it has stopped (the close handler below).
+    // Ctrl+C reaches Playwright from the console as well; restore once it has stopped (the close
+    // handler below). A SIGTERM sent to this process alone is passed on.
     if (child && child.exitCode === null) {
-      child.kill(signal);
+      if (signal === "SIGTERM") child.kill(signal);
       return;
     }
     restore();
@@ -81,12 +86,12 @@ try {
       copyFileSync(file, backupOf(file));
       backedUp.add(file);
     }
+    written.add(file);
     writeFileSync(file, contents);
   }
   exitCode = await new Promise((resolve) => {
-    child = spawn(...npx(["playwright", "test", ...process.argv.slice(2)]), {
+    child = spawn(process.execPath, [PLAYWRIGHT_CLI, "test", ...process.argv.slice(2)], {
       stdio: "inherit",
-      shell: isWindows,
       env: {
         ...process.env,
         // The app reads these too (process env wins over .env), so set them to the local stack as well.

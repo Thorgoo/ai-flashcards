@@ -44,7 +44,9 @@ setup("sign in the e2e account", async ({ page }) => {
   for (let i = 0; i < 50 && ![...jar.keys()].some((name) => name.includes("auth-token")); i++) {
     await sleep(20);
   }
-  if (jar.size === 0) throw new Error(`no session cookie for ${E2E_EMAIL}`);
+  if (![...jar.keys()].some((name) => name.includes("auth-token"))) {
+    throw new Error(`no session cookie for ${E2E_EMAIL}`);
+  }
 
   // Same encoding as the Cookie header smoke-topics sends.
   const cookies = [...jar].map(([name, value]) => {

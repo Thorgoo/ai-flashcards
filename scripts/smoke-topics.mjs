@@ -600,6 +600,7 @@ try {
   // A failed grading (fake AI fails once on the marker) must change nothing but the grading
   // limit, and the same attempt retried must then be graded and saved once.
   const retriedCard = due[1]?.id;
+  if (!retriedCard) throw new Error("the failed-grading steps need a second due card");
   await makeOpenDue(retriedCard, today);
   const before = await cardState(retriedCard);
   const gradedAtStart = await gradings(a.userId);

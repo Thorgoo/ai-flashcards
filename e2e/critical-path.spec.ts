@@ -83,6 +83,7 @@ test.describe.serial("critical path", () => {
   });
 
   test("a failed grading keeps the typed answer and its retry is graded and saved once", async ({ page }) => {
+    if (!topicId) throw new Error("this test needs the topic of the loop test: run the whole describe");
     // One card of the loop's topic becomes an open card due yesterday, so it leads the queue.
     const { data: card, error } = await admin()
       .from("flashcards")

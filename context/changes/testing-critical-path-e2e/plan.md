@@ -382,10 +382,10 @@ Brak migracji bazy. Zmiana fixtury działa wyłącznie w trybie fake (lokalny Su
 
 #### Automated
 
-- [ ] 6.1 Job `smoke` na PR przechodzi z krokiem e2e
-- [ ] 6.2 Job `ci` (lint, vitest, `astro check`, build) przechodzi
+- [x] 6.1 Job `smoke` na PR przechodzi z krokiem e2e — 2dda55a
+- [x] 6.2 Job `ci` (lint, vitest, `astro check`, build) przechodzi — 2dda55a
 
 #### Manual
 
-- [ ] 6.3 Celowo czerwony e2e na gałęzi roboczej publikuje artefakt z trace w zakładce Actions
-- [ ] 6.4 §5 i §6.3 test-planu opisują to, co faktycznie trafiło do repo
+- [x] 6.3 Celowo czerwony e2e na gałęzi roboczej publikuje artefakt z trace w zakładce Actions — 2dda55a
+- [x] 6.4 §5 i §6.3 test-planu opisują to, co faktycznie trafiło do repo — 2dda55a

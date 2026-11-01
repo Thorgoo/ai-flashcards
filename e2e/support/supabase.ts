@@ -12,6 +12,10 @@ export function supabaseEnv() {
       "SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are required (run the tests through `npm run e2e`)",
     );
   }
+  // The tests delete and recreate an account with the service key: never against a hosted project.
+  if (!["localhost", "127.0.0.1"].includes(new URL(SUPABASE_URL).hostname)) {
+    throw new Error(`SUPABASE_URL must point at the local stack (localhost), got ${SUPABASE_URL}`);
+  }
   return { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY, serviceRoleKey: SUPABASE_SERVICE_ROLE_KEY };
 }
 
