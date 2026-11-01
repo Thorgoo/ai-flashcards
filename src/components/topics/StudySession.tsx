@@ -223,7 +223,8 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
   }
 
   function retry() {
-    if (attempt) save(attempt);
+    // BREAK-CHECK (reverted): a retry sends different text.
+    if (attempt) save(attempt.format === "open" ? { ...attempt, answerText: `${attempt.answerText} (ponowione)` } : attempt);
   }
 
   return (
