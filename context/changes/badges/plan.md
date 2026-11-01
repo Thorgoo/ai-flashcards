@@ -247,6 +247,14 @@ Migracja uzupełnia liczniki z obecnych fiszek `mastered` i przyznaje odznaki z 
 - Opanowanie: `context/archive/2026-10-29-next-batch-and-subtopic-mastery/plan-brief.md`, `src/lib/topics/mastery.ts`
 - Odpowiedzi: `supabase/migrations/20261028200200_flashcard_open_answers.sql`, `src/pages/api/topics/[id]/study/answer.ts`
 
+## Deviations
+
+Odstępstwa od tekstu planu wykryte w `reviews/impl-review.md` (F1); zachowanie zgodne z intencją.
+
+- **RLS `badges` / `topic_mastery_tallies`** (faza 1): zamiast samego `select` i wyjątków w `rls_guard_exceptions` obie tabele mają 4 polityki właściciela, a zapisy blokuje `revoke all` + `grant select` (wzorzec `quizzes`); `rls_guard.test.sql` bez zmian.
+- **Komunikat w sesji** (faza 3): osobny stan `earned` i własny `<Alert role="status">` zamiast stringa `notice`, bo string nie zmieści listy i linku do `/badges`.
+- **Etykiety** (fazy 2–3): `daysLabel` jest w `src/lib/badges/catalog.ts`, a `labels.ts` z niego korzysta (kierunek odwrotny do planu); `awardedLabel` (dzień Europe/Warsaw) i `badgeCountLabel` doszły do `src/components/topics/labels.ts`.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
