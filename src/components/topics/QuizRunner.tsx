@@ -57,7 +57,7 @@ export default function QuizRunner({ topicId, topicName, initial, autoStart, has
     void run("answer", `${base}/answer`, { questionId, answer: value });
 
   useEffect(() => {
-    if (!autoStart || started.current) return;
+    if (autoStart || started.current) return;
     started.current = true;
     // Drop ?start=1 first, so reloading the page while AI works never starts a second call.
     window.history.replaceState(null, "", window.location.pathname);
