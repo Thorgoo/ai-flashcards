@@ -142,8 +142,7 @@ export default function StudySession({ topicId, topicName, initial }: Props) {
       setStep((value) => value + 1);
       return;
     }
-    // BREAK-CHECK (reverted): the typed text is lost on a failed save.
-    setAttempt({ ...next, error, ...(next.format === "open" ? { answerText: "" } : {}) });
+    setAttempt({ ...next, error });
   }
 
   async function saveChoice(next: ChoiceAttempt) {
