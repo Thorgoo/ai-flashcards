@@ -334,9 +334,9 @@ Brak migracji bazy. Zmiana fixtury działa wyłącznie w trybie fake (lokalny Su
 
 #### Automated
 
-- [x] 1.1 `npm test` przechodzi, w tym nowe przypadki fail-once w `grading-task.test.ts`
-- [x] 1.2 `npm run lint` i `npx astro check` przechodzą
-- [x] 1.3 Usunięcie zapamiętania tekstu (fixture zawodzi zawsze) czerwieni test „drugie wywołanie zwraca werdykt”
+- [x] 1.1 `npm test` przechodzi, w tym nowe przypadki fail-once w `grading-task.test.ts` — ccb6601
+- [x] 1.2 `npm run lint` i `npx astro check` przechodzą — ccb6601
+- [x] 1.3 Usunięcie zapamiętania tekstu (fixture zawodzi zawsze) czerwieni test „drugie wywołanie zwraca werdykt” — ccb6601
 
 ### Phase 2: Integracja ryzyka #5 w smoke-topics
 
