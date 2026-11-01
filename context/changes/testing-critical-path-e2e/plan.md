@@ -375,8 +375,8 @@ Brak migracji bazy. Zmiana fixtury działa wyłącznie w trybie fake (lokalny Su
 
 #### Automated
 
-- [ ] 5.1 `npm run e2e` przechodzi oba testy lokalnie
-- [ ] 5.2 Celowe zepsucie (niecommitowane): czyszczenie `text`/`attempt` w `failed()` w `StudySession.tsx` czerwieni asercję pola; generowanie nowego `attemptId` w `retry()` czerwieni asercję „1 wiersz odpowiedzi”
+- [x] 5.1 `npm run e2e` przechodzi oba testy lokalnie — a87f27e
+- [x] 5.2 Celowe zepsucie (niecommitowane): czyszczenie `text`/`attempt` w `failed()` w `StudySession.tsx` czerwieni asercję pola; generowanie nowego `attemptId` w `retry()` czerwieni asercję „1 wiersz odpowiedzi” — a87f27e
 
 ### Phase 6: CI i aktualizacja test-planu
 

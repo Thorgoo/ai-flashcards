@@ -98,7 +98,7 @@ Test profile: `meaningful` — vitest skonfigurowany, 16 plików testowych skupi
 | unit + integration (vitest) | CI | required (wired) | regresje logiki |
 | database tests (`supabase test db`) | CI smoke job | required (wired); extended by Phase 2–4 | regresje funkcji SQL, izolacji, limitów |
 | smoke scripts | CI smoke job | required (wired) | uruchomienie aplikacji na lokalnym Supabase |
-| e2e on critical flow | CI on PR | required after §3 Phase 4 (local after Phase 1) | zepsuta pętla US-01 w przeglądarce |
+| e2e on critical flow (Playwright) | CI smoke job + local `npm run e2e` | required (wired in Phase 1) | zepsuta pętla US-01 w przeglądarce; zgubiona odpowiedź przy błędzie oceny |
 | manual prod check | Chrome na prod po merge | recommended | błędy specyficzne dla środowiska |
 
 ## 6. Cookbook Patterns
@@ -117,7 +117,13 @@ Test profile: `meaningful` — vitest skonfigurowany, 16 plików testowych skupi
 
 ### 6.3 Adding an e2e test
 
-- TBD — see §3 Phase 1 (wzorzec pełnej pętli US-01 na fake AI i zachowania odpowiedzi przy błędzie oceny).
+- **Location**: `e2e/<flow>.spec.ts`; wspólne helpery bazy (klient service-role, stan fiszki, liczniki ocen, data w Warszawie) w `e2e/support/supabase.ts`.
+- **Reference test**: `e2e/critical-path.spec.ts` — pętla US-01 i błąd oceny z ponowieniem, w jednym `test.describe.serial` na wspólnym temacie.
+- **Logowanie**: projekt `setup` (`e2e/auth.setup.ts`) odtwarza konto `e2e@example.com` (świeże limity AI), loguje hasłem do ciasteczek `@supabase/ssr` i zapisuje `storageState`. E-mail musi być w `ALLOWED_EMAILS`.
+- **Selektory**: tylko `getByRole` / `getByLabel` / `getByText`; po `fill` w formularzu wyspy React czekaj na aktywny przycisk (hydratacja). Nie przeładowuj stron z `?generate=1` / `?start=1`.
+- **Stan bazy**: dane do scenariusza ustawiaj klientem service-role (np. fiszka `open` z `due_on` = wczoraj, żeby była pierwsza w kolejce); asercje UI zawsze uzupełniaj odczytem bazy.
+- **Błąd AI**: tekst ze znacznikiem `[fake-ai-fail-once]` (`src/lib/ai/fixtures.ts`) daje jeden prawdziwy błąd 503 serwera na dany tekst; dodaj losowy sufiks, bo smoke i e2e dzielą serwer w CI. Nie używaj `page.route` do symulowania błędów serwera.
+- **Run locally**: `npm run e2e` (wymaga lokalnego Supabase z `[auth.email] enable_signup = true`; wrapper podmienia i przywraca `.env` / `.dev.vars`). W CI: krok „Run E2E tests” w jobie `smoke`, raport i trace jako artefakt `playwright-report` przy porażce.
 
 ### 6.4 Adding a test for a new table or database function
 
@@ -126,7 +132,7 @@ Test profile: `meaningful` — vitest skonfigurowany, 16 plików testowych skupi
 
 ### 6.5 Per-rollout-phase notes
 
-(Uzupełniane po zakończeniu każdego etapu.)
+- **Phase 1 (Critical-path E2E, 2026-11-01)**: ryzyko #5 dotyczy tylko sesji nauki; nieudana ocena celowo pobiera 1 ocenę z limitu. Dowód stanu bazy w `scripts/smoke-topics.mjs` (krok „a failed grading …”) i w e2e. Każdy nowy test sprawdzono celowym zepsuciem w CI. Ręczne kroki wrappera `npm run e2e` (przywracanie env, Ctrl+C, odmowa przy kopii) czekają na maszynę z Dockerem.
 
 ## 7. What We Deliberately Don't Test
 
