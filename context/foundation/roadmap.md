@@ -9,7 +9,7 @@ main_goal: quality
 top_blocker: time
 milestone_id: mvp-diagnosis-to-mastery
 milestone_seq: 1
-milestone_status: open
+milestone_status: done
 ---
 
 # Roadmap: AI Flashcards
@@ -20,7 +20,7 @@ milestone_status: open
 
 ## Milestone
 
-**M-1: MVP — od diagnozy do opanowania** — Status: open
+**M-1: MVP — od diagnozy do opanowania** — Status: done
 
 - **Intent:** Zalogowany użytkownik z allowlisty przechodzi pełną pętlę z PRD: temat → podtematy → quiz diagnostyczny → fiszki ze słabych podtematów → nauka z oceną AI → opanowanie → kolejna partia, a ekran główny, streak i odznaki pokazują postęp i zaniedbane tematy.
 - **Source materials:** `context/foundation/prd.md` (v1)
@@ -277,6 +277,8 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Format tak/nie** — Why parked: PRD § Non-Goals.
 
 ## Milestone History
+
+- **M-1: MVP — od diagnozy do opanowania** (`mvp-diagnosis-to-mastery`) — closed 2026-11-01. Pełna pętla z PRD działa na produkcji: logowanie z allowlistą → temat i podtematy → quiz diagnostyczny → fiszki ze słabych podtematów → nauka A/B/C/D i otwarta z oceną AI → opanowanie i kolejna partia, plus ekran główny, seria dni i odznaki (12/12 elementów done).
 
 ## Done
 
