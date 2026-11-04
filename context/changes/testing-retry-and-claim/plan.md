@@ -388,13 +388,13 @@ Bez migracji. Tymczasowe migracje z prób A i E nigdy nie trafiają do gałęzi 
 
 #### Automated
 
-- [x] 1.1 Testy bazy przechodzą lokalnie: `npm run db:test`
-- [x] 1.2 Próba zepsucia A w szkicu PR (tymczasowa migracja: TTL 120 s i 240 s oraz `count(*)` z filtrem `status <> 'failed'`) czerwieni krok `Database tests` na nowych asercjach TTL i liczenia
-- [x] 1.3 Migracja tymczasowa nie trafia do gałęzi zmiany; szkic PR zamknięty, gałąź usunięta
+- [x] 1.1 Testy bazy przechodzą lokalnie: `npm run db:test` — ab1c48f
+- [x] 1.2 Próba zepsucia A w szkicu PR (tymczasowa migracja: TTL 120 s i 240 s oraz `count(*)` z filtrem `status <> 'failed'`) czerwieni krok `Database tests` na nowych asercjach TTL i liczenia — ab1c48f
+- [x] 1.3 Migracja tymczasowa nie trafia do gałęzi zmiany; szkic PR zamknięty, gałąź usunięta — ab1c48f
 
 #### Manual
 
-- [x] 1.4 Przegląd: każda oczekiwana liczba w nowych asercjach da się wyprowadzić z PRD lub §2 planu testów, bez czytania migracji
+- [x] 1.4 Przegląd: każda oczekiwana liczba w nowych asercjach da się wyprowadzić z PRD lub §2 planu testów, bez czytania migracji — ab1c48f
 
 ### Phase 2: Odczyt wygasłej rezerwacji w vitest
 
