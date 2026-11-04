@@ -42,6 +42,10 @@ skills-lock.json
 # playwright (e2e)
 playwright-report/
 test-results/
+blob-report/
+playwright/.auth/
+playwright/.cache/
+.playwright-cli/
 e2e/.auth/
 .env.e2e-backup
 .dev.vars.e2e-backup

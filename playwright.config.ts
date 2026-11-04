@@ -3,7 +3,9 @@ import { defineConfig, devices } from "@playwright/test";
 // Browser tests of the critical path against the production preview (build + astro preview on
 // the Workers runtime). Locally run through `npm run e2e` (scripts/e2e.mjs points the app at the
 // local Supabase); in CI the smoke job has already started the preview, so it is reused.
-const BASE_URL = "http://localhost:4321";
+// 4321 is the Astro preview default; E2E_PORT overrides it when that port is taken on this machine.
+const PORT = Number(process.env.E2E_PORT ?? 4321);
+const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "e2e",
@@ -27,9 +29,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run build && npm run preview -- --port 4321",
+    command: `npm run build && npm run preview -- --port ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !!process.env.CI,
     timeout: 180_000,
+    // Astro 7 moves `astro preview` into a background daemon when it detects an AI agent, so the
+    // command exits early and the daemon keeps the port. This keeps it in the foreground.
+    env: { ASTRO_PREVIEW_BACKGROUND: "1" },
   },
 });

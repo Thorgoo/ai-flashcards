@@ -26,10 +26,12 @@ test.describe.serial("critical path", () => {
     await expect(page).toHaveURL(/\/topics\/new$/);
 
     // The submit button is disabled in the server HTML; React may also clear a value typed
-    // before hydration, so fill again until the hydrated form accepts the name.
+    // before hydration, so fill again until the hydrated form accepts the name. Cleared first:
+    // re-filling the same text fires no change event, which would leave the button disabled.
     const nameField = page.getByLabel("Temat", { exact: true });
     const create = page.getByRole("button", { name: "Utwórz i wygeneruj podtematy", exact: true });
     await expect(async () => {
+      await nameField.fill("");
       await nameField.fill(topicName);
       await expect(create).toBeEnabled({ timeout: 1_000 });
     }).toPass({ timeout: 15_000 });
@@ -115,6 +117,7 @@ test.describe.serial("critical path", () => {
     const field = page.getByLabel("Twoja odpowiedź", { exact: true });
     const check = page.getByRole("button", { name: "Sprawdź", exact: true });
     await expect(async () => {
+      await field.fill("");
       await field.fill(answerText);
       await expect(check).toBeEnabled({ timeout: 1_000 });
     }).toPass({ timeout: 15_000 });
