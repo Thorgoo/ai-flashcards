@@ -30,12 +30,14 @@ pnpm-debug.log*
 # course materials (local only, not part of the app)
 .claude/skills/
 .claude/prompts/
+.claude/config-templates/
 .claude/.10x-cli-manifest.json
 .claude/settings.local.json
 .agents/
 .10x-cli.json
 skills-lock.json
 /CLAUDE.md
+/10xdevs/
 
 # playwright (e2e)
 playwright-report/

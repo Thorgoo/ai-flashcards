@@ -11,8 +11,8 @@ export default function SignInForm({ serverError }: Props) {
     <form method="POST" action="/api/auth/signin" className="space-y-4">
       <ServerError message={serverError} />
 
-      <SubmitButton pendingText="Redirecting to GitHub..." icon={<LogIn className="size-4" />}>
-        Sign in with GitHub
+      <SubmitButton pendingText="Przekierowanie do GitHuba..." icon={<LogIn className="size-4" />}>
+        Zaloguj się przez GitHub
       </SubmitButton>
     </form>
   );
