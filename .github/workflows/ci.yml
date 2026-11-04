@@ -38,9 +38,10 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      # Same version as package-lock.json. CLI v3 rejects [inbucket] in supabase/config.toml.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.117.0
       - run: npm ci
       - name: Start local Supabase
         run: |
