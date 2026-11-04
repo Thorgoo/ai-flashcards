@@ -246,7 +246,3 @@ GitHub Actions runs two jobs on every push and PR to `main`:
 
 - **ci** — lint, unit tests, `astro check` and build. Configure `SUPABASE_URL` and `SUPABASE_KEY` as repository secrets for the build step.
 - **smoke** — starts a local Supabase via the Supabase CLI, runs the pgTAP database tests, builds, serves the production preview on the Cloudflare runtime and runs `npm run smoke`, `npm run smoke:topics` and the Playwright tests against it. No secrets required.
-
-## License
-
-MIT
