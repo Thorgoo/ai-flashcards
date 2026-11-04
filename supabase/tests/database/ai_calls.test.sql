@@ -3,12 +3,14 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(13);
+select plan(19);
 
 insert into auth.users (id, email)
 values
   ('00000000-0000-0000-0000-00000000000a', 'account-a@example.com'),
-  ('00000000-0000-0000-0000-00000000000b', 'account-b@example.com');
+  ('00000000-0000-0000-0000-00000000000b', 'account-b@example.com'),
+  ('00000000-0000-0000-0000-00000000000c', 'account-c@example.com'),
+  ('00000000-0000-0000-0000-00000000000d', 'account-d@example.com');
 
 -- Account A uses up its generation limit.
 set local role authenticated;
@@ -93,6 +95,71 @@ select is(
   (select status || ':' || error_code from public.ai_calls where id = current_setting('test.a_call')::uuid),
   'failed:ai_timeout',
   'owner records the outcome of its call'
+);
+
+-- Account C: failed and pending calls both count, so call 20 is the last one allowed.
+reset role;
+insert into public.ai_calls (user_id, kind, task, model, status, called_on)
+select
+  '00000000-0000-0000-0000-00000000000c',
+  'generation',
+  'test',
+  'test-model',
+  case when i <= 10 then 'failed' else 'pending' end,
+  (now() at time zone 'Europe/Warsaw')::date
+from generate_series(1, 19) as i;
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000c", "role": "authenticated"}';
+
+select is(
+  (select remaining from public.begin_ai_call('generation', 'test', 'test-model')),
+  0,
+  'after 10 failed and 9 pending calls, generation 20 is allowed and leaves 0'
+);
+select throws_ok(
+  $$ select public.begin_ai_call('generation', 'test', 'test-model') $$,
+  'P0429',
+  'ai_quota_exceeded',
+  'generation 21 is refused when failed and pending calls fill the limit'
+);
+select is(
+  (select count(*) from public.ai_calls
+   where user_id = '00000000-0000-0000-0000-00000000000c' and kind = 'generation'),
+  20::bigint,
+  'a refused generation adds no row'
+);
+
+-- Account D: the grading limit is 100.
+reset role;
+insert into public.ai_calls (user_id, kind, task, model, called_on)
+select
+  '00000000-0000-0000-0000-00000000000d',
+  'grading',
+  'test',
+  'test-model',
+  (now() at time zone 'Europe/Warsaw')::date
+from generate_series(1, 99);
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000d", "role": "authenticated"}';
+
+select is(
+  (select remaining from public.begin_ai_call('grading', 'test', 'test-model')),
+  0,
+  'after 99 gradings, grading 100 is allowed and leaves 0'
+);
+select throws_ok(
+  $$ select public.begin_ai_call('grading', 'test', 'test-model') $$,
+  'P0429',
+  'ai_quota_exceeded',
+  'grading 101 is refused'
+);
+select is(
+  (select count(*) from public.ai_calls
+   where user_id = '00000000-0000-0000-0000-00000000000d' and kind = 'grading'),
+  100::bigint,
+  'a refused grading adds no row'
 );
 
 -- Anonymous callers cannot reach the limit functions at all (checked on the privilege
