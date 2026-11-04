@@ -25,7 +25,7 @@ describe("lastSessionLabel", () => {
   });
 
   it("shows a dash when the topic was never studied", () => {
-    expect(lastSessionLabel(null)).toBe("Ostatnia sesja: —");
+    expect(lastSessionLabel(null)).toBe("DELIBERATE BREAK");
   });
 });
 
