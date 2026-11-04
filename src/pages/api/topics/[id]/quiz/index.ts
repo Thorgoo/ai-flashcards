@@ -52,7 +52,6 @@ async function generateQuiz(
   const ai = getAi(supabase, user);
   const result = await ai.call(buildQuizRequest(topic, subtopics));
   if (!result.ok) {
-    await releaseQuizClaim(supabase, topic.id, claimedAt);
     return aiResponse(result, ai.mode);
   }
 
