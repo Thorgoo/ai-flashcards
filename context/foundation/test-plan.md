@@ -65,7 +65,7 @@ dysku pojawiają się artefakty.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|---|---|---|---|---|---|
-| 1 | Critical-path E2E | Udowodnić, że pełna pętla US-01 działa w przeglądarce na fake AI, a błąd oceny nie gubi odpowiedzi | #4, #5 | e2e (Playwright) + integration | planned | context/changes/testing-critical-path-e2e/ |
+| 1 | Critical-path E2E | Udowodnić, że pełna pętla US-01 działa w przeglądarce na fake AI, a błąd oceny nie gubi odpowiedzi | #4, #5 | e2e (Playwright) + integration | done | context/archive/2026-11-01-testing-critical-path-e2e/ |
 | 2 | Retry and claim integrity | Udowodnić, że ponowienie nie duplikuje wyniku ani nie marnuje limitu, przerwanie nie blokuje kolejnej próby, a limit jest szczelny | #1, #2, #7 | integration (pgTAP + vitest) | not started | — |
 | 3 | Flashcard state-transition guard | Udowodnić, że każda migracja funkcji odpowiadania zachowuje tabelę stanów z PRD | #3 | integration (pgTAP, table-driven) | not started | — |
 | 4 | Isolation and quality gates | Udowodnić, że każda tabela i funkcja jest objęta testem izolacji, i utrwalić e2e w CI | #6 | integration (pgTAP) + gates | not started | — |
@@ -81,7 +81,7 @@ Test profile: `meaningful` — vitest skonfigurowany, 16 plików testowych skupi
 | unit + integration (TS) | Vitest | ^5.0.5 | Środowisko node, `src/**/*.test.ts`; AI podstawiane przez `AI_MODE=fake` |
 | integration (DB) | pgTAP przez Supabase CLI | supabase ^2.23.4 | `npm run db:test`; uruchamiane w CI na lokalnym Supabase |
 | smoke | skrypty Node | n/a | `npm run smoke`, `npm run smoke:topics` — konta testowe logowane hasłem |
-| e2e | none yet — see Phase 1 | — | Playwright do dodania w Phase 1 |
+| e2e | Playwright | 1.64.1 | `npm run e2e` lokalnie, job smoke w CI; `e2e/` na fake AI |
 | accessibility | none — out of scope | — | Nie objęte rolloutem |
 
 **Stack grounding tools (current session):**
