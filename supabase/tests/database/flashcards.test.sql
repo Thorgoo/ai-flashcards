@@ -6,7 +6,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(60);
+select plan(62);
 
 insert into auth.users (id, email)
 values
@@ -190,6 +190,24 @@ select throws_ok(
   'P0409',
   'batch_generating',
   'a claim 121 s old is still running and cannot be claimed again'
+);
+
+-- One second below the 180 s TTL; now() is frozen in this transaction.
+reset role;
+update public.flashcard_batches set claimed_at = now() - interval '179 seconds'
+where topic_id = '00000000-0000-0000-0000-0000000000a1';
+set local role authenticated;
+
+select throws_ok(
+  $$ select public.claim_flashcard_batch('00000000-0000-0000-0000-0000000000a1') $$,
+  'P0409',
+  'batch_generating',
+  'a claim 179 s old is still running and cannot be claimed again'
+);
+select is(
+  (select claimed_at from public.flashcard_batches where topic_id = '00000000-0000-0000-0000-0000000000a1'),
+  now() - interval '179 seconds',
+  'a refused claim leaves claimed_at unchanged'
 );
 
 reset role;
