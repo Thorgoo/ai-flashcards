@@ -25,10 +25,11 @@ begin
   end loop;
 
   foreach v_before in array v_refunds loop
-    v_after := regexp_replace(
+    -- Both are language sql, so the refund is a first statement in the body.
+    v_after := replace(
       pg_get_functiondef(v_before::regprocedure),
-      '\mbegin\M',
-      'begin delete from public.ai_calls where user_id = auth.uid() and status = ''pending'';'
+      'AS $function$',
+      'AS $function$ delete from public.ai_calls where user_id = auth.uid() and status = ''pending'';'
     );
     if v_after = pg_get_functiondef(v_before::regprocedure) then
       raise exception 'break did not apply to %', v_before;
