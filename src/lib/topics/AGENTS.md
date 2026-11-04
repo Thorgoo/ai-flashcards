@@ -27,4 +27,4 @@
 
 ## Testing
 
-Unit tests use the fake AI provider; import `callAi` from `@/lib/ai/call` (`@/lib/ai` needs `astro:env`). The end-to-end flow is `scripts/smoke-topics.mjs` (CI only); extend it when an endpoint changes, and keep its generation count in step with the daily-limit loop.
+Unit tests use the fake AI provider; import `callAi` from `@/lib/ai/call` (`@/lib/ai` needs `astro:env`). The end-to-end flow is `scripts/smoke-topics.mjs` (CI only); extend it when an endpoint changes, and keep its generation count in step with the daily-limit loop. Scenarios with many charges go to `scripts/smoke-retry-claim.mjs`, each on its own account.
