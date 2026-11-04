@@ -82,13 +82,35 @@ const grading: FakeFixture = (request) => {
   };
 };
 
+// A topic whose name contains this marker fails each generation task twice with ai_unavailable
+// (503, retryable); the same task and name then succeed, so smoke can cover retrying a failed
+// generation. Read from the <temat> tag only, because subtopic names inherit the topic name.
+// "Twice" is per server isolate: a restarted preview fails the same pair again.
+export const FAKE_GENERATION_FAIL_TWICE = "[fake-ai-fail-twice]";
+const generationFailures = new Map<string, number>();
+
+const failingTwice =
+  (fixture: FakeFixture): FakeFixture =>
+  (request) => {
+    const topic = /<temat>([\s\S]*?)<\/temat>/.exec(request.prompt)?.[1] ?? "";
+    if (topic.includes(FAKE_GENERATION_FAIL_TWICE)) {
+      const key = `${request.task}:${topic}`;
+      const failures = generationFailures.get(key) ?? 0;
+      if (failures < 2) {
+        generationFailures.set(key, failures + 1);
+        throw new FakeAiFailure("ai_unavailable");
+      }
+    }
+    return fixture(request);
+  };
+
 // Canned responses for AI_MODE=fake, one entry per task (the `task` passed to callAi).
 // Each slice that adds an AI task adds its fixture here.
 export const fakeFixtures: Record<string, FakeFixture> = {
-  [SUBTOPICS_TASK]: subtopics,
-  [QUIZ_TASK]: quiz,
-  [FLASHCARDS_TASK]: flashcards,
+  [SUBTOPICS_TASK]: failingTwice(subtopics),
+  [QUIZ_TASK]: failingTwice(quiz),
+  [FLASHCARDS_TASK]: failingTwice(flashcards),
   // Next batches use the same <podtemat> tags; the <istniejace_pytania> block is not read.
-  [NEXT_FLASHCARDS_TASK]: flashcards,
+  [NEXT_FLASHCARDS_TASK]: failingTwice(flashcards),
   [GRADING_TASK]: grading,
 };

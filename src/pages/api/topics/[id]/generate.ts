@@ -14,10 +14,11 @@ export const POST: APIRoute = async (context) => {
   if (found instanceof Response) return found;
   const { topic } = found;
   // Check the lock before calling AI: every call uses up the daily limit.
-  if (topic.status !== "draft") return topicErrorResponse("topic_locked");
 
   const ai = getAi(session.supabase, session.user);
+  await session.supabase.from("subtopics").delete().eq("topic_id", topic.id);
   const result = await ai.call(buildSubtopicsRequest(topic));
+  if (topic.status !== "draft") return topicErrorResponse("topic_locked");
   if (!result.ok) return aiResponse(result, ai.mode);
 
   const saved = await replaceSubtopics(session.supabase, topic.id, result.data.subtopics);
