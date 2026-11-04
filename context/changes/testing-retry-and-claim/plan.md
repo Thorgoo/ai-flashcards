@@ -400,9 +400,9 @@ Bez migracji. Tymczasowe migracje z prób A i E nigdy nie trafiają do gałęzi 
 
 #### Automated
 
-- [ ] 2.1 Testy jednostkowe przechodzą: `npm test`
-- [ ] 2.2 Lint przechodzi: `npm run lint`
-- [ ] 2.3 Próba zepsucia B lokalnie: `QUIZ_CLAIM_TTL_SECONDS` = 120 i `FLASHCARD_CLAIM_TTL_SECONDS` = 240 czerwienią nowe testy; zmiana cofnięta przed commitem
+- [x] 2.1 Testy jednostkowe przechodzą: `npm test`
+- [x] 2.2 Lint przechodzi: `npm run lint`
+- [x] 2.3 Próba zepsucia B lokalnie: `QUIZ_CLAIM_TTL_SECONDS` = 120 i `FLASHCARD_CLAIM_TTL_SECONDS` = 240 czerwienią nowe testy; zmiana cofnięta przed commitem
 
 ### Phase 3: Znacznik błędu i ponowienia przez HTTP
 

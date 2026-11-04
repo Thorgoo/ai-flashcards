@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { batchError, getFlashcardSummary, hasFlashcards } from "./flashcard-repository";
 
 const TOPIC = "00000000-0000-0000-0000-0000000000a1";
@@ -156,5 +156,51 @@ describe("getFlashcardSummary failures", () => {
       TOPIC,
     );
     expect(summary).toMatchObject({ failed: { seq: 1, error: { code: "ai_timeout" } } });
+  });
+});
+
+describe("getFlashcardSummary claim expiry", () => {
+  const CLAIMED_AT = "2026-11-04T12:00:00.000Z";
+  const READY_AT = "2026-11-04T11:00:00.000Z";
+  const claim = (seq: number): Batch => ({
+    id: `b${seq}`,
+    seq,
+    status: "generating",
+    claimed_at: CLAIMED_AT,
+    error_code: null,
+  });
+  const readyBatch: Batch = { id: "b1", seq: 1, status: "ready", claimed_at: READY_AT, error_code: null };
+  const readyCards: Card[] = [{ batch_id: "b1", subtopic_id: "s1", stage: "learning" }];
+
+  beforeEach(() => {
+    // Only the clock is fake, so the client's promises still resolve.
+    vi.useFakeTimers({ toFake: ["Date"] });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows a first batch claim 179 s old as generating", async () => {
+    vi.setSystemTime(Date.parse(CLAIMED_AT) + 179_000);
+    const summary = await getFlashcardSummary(client([claim(1)]), TOPIC);
+    expect(summary).toMatchObject({ readyBatches: 0, generating: { seq: 1 } });
+  });
+
+  it("reads a first batch claim 181 s old as no flashcards", async () => {
+    vi.setSystemTime(Date.parse(CLAIMED_AT) + 181_000);
+    expect(await getFlashcardSummary(client([claim(1)]), TOPIC)).toBeNull();
+  });
+
+  it("shows a next batch claim 179 s old beside the ready batch", async () => {
+    vi.setSystemTime(Date.parse(CLAIMED_AT) + 179_000);
+    const summary = await getFlashcardSummary(client([readyBatch, claim(2)], readyCards), TOPIC);
+    expect(summary).toMatchObject({ readyBatches: 1, generating: { seq: 2 }, current: { seq: 1 } });
+  });
+
+  it("keeps the ready batch when the claim beside it is 181 s old", async () => {
+    vi.setSystemTime(Date.parse(CLAIMED_AT) + 181_000);
+    const summary = await getFlashcardSummary(client([readyBatch, claim(2)], readyCards), TOPIC);
+    expect(summary).toMatchObject({ readyBatches: 1, generating: null, current: { seq: 1 } });
   });
 });
