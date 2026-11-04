@@ -1,21 +1,45 @@
-# 10x Astro Starter
+# AI Flashcards
 
-![](./public/template.png)
+Learn several subjects at once without writing flashcards by hand. A diagnostic quiz shows what you don't know yet in a topic, and AI generates flashcards from your weakest subtopics.
 
-A modern, opinionated starter template for building fast, accessible web applications.
+**Live app:** <https://ai-flashcards.ai-flashcards.workers.dev>. Sign-in is limited to an email allowlist, so to try the full flow without an account, run it locally in fake AI mode (see [AI calls](#ai-calls)).
+
+## How it works
+
+1. **Create a topic**, such as "Spring" or "English", with an optional note on scope and level. AI proposes subtopics, which you can edit and then confirm.
+2. **Take the diagnostic quiz.** The result is broken down by subtopic, and every question has an "I don't know" option.
+3. **Study AI-generated flashcards** from your weakest subtopics. Their shape depends on the automatically detected content type (conceptual or language).
+4. **Reach mastery.** A card starts as multiple choice, moves to a short open answer graded by AI after the first correct answer, and is mastered after two correct open answers on separate occasions.
+5. **Generate the next batch** once 80% of the current one is mastered. It skips subtopics you have already mastered.
+
+A study streak and badges add motivation. Each account sees only its own data, and a failed AI call never loses saved cards, progress or a typed answer.
 
 ## Tech Stack
 
-- [Astro](https://astro.build/) v7 - Modern web framework with server-first rendering
-- [React](https://react.dev/) v19 - UI library for interactive components
-- [TypeScript](https://www.typescriptlang.org/) v6 - Type-safe JavaScript
-- [Tailwind CSS](https://tailwindcss.com/) v4 - Utility-first CSS framework
-- [Supabase](https://supabase.com/) - Authentication and backend-as-a-service
-- [Cloudflare Workers](https://workers.cloudflare.com/) - Edge deployment runtime
+- [Astro](https://astro.build/) v7 - Server-rendered pages and API routes
+- [React](https://react.dev/) v19 - Interactive components
+- [TypeScript](https://www.typescriptlang.org/) v6
+- [Tailwind CSS](https://tailwindcss.com/) v4 and [shadcn/ui](https://ui.shadcn.com/)
+- [Supabase](https://supabase.com/) - Postgres with row-level security, and GitHub OAuth
+- [Anthropic API](https://docs.anthropic.com/) - Generation and grading
+- [Cloudflare Workers](https://workers.cloudflare.com/) - Hosting
+- [Vitest](https://vitest.dev/), [pgTAP](https://pgtap.org/) and [Playwright](https://playwright.dev/) - Tests
+
+## Project documents
+
+The product was specified and built from these documents, which AI coding agents also read:
+
+- [`context/foundation/prd.md`](context/foundation/prd.md) - Product requirements
+- [`context/foundation/roadmap.md`](context/foundation/roadmap.md) - Milestones and slices
+- [`context/foundation/tech-stack.md`](context/foundation/tech-stack.md) - Stack choice
+- [`context/foundation/infrastructure.md`](context/foundation/infrastructure.md) - Hosting choice and risks
+- [`context/foundation/test-plan.md`](context/foundation/test-plan.md) - Test strategy
+- [`context/archive/`](context/archive/) - Plans and reviews of completed changes
+- `AGENTS.md` files in the repository root, `src/lib/ai/`, `src/lib/topics/` and `supabase/` - Conventions for agents
 
 ## Prerequisites
 
-- Node.js v22.14.0 (as specified in `.nvmrc`)
+- Node.js v22.23.3 (as specified in `.nvmrc`)
 - npm (comes with Node.js)
 
 ## Getting Started
@@ -23,8 +47,8 @@ A modern, opinionated starter template for building fast, accessible web applica
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/przeprogramowani/10x-astro-starter.git
-cd 10x-astro-starter
+git clone https://github.com/Thorgoo/ai-flashcards.git
+cd ai-flashcards
 ```
 
 2. Install dependencies:
@@ -60,18 +84,29 @@ npm run dev
 - `npm run db:reset` - Recreate the local database from `supabase/migrations/` (requires the local Supabase stack)
 - `npm run db:test` - Run the pgTAP database tests in `supabase/tests/` (requires the local Supabase stack)
 - `npm test` - Run the Vitest unit tests (`src/**/*.test.ts`)
+- `npm run e2e` - Run the Playwright tests against the local Supabase stack with fake AI (requires `npx supabase start`; pass Playwright arguments after `--`)
 
 ## Project Structure
 
 ```md
 .
 ├── src/
-│ ├── layouts/ # Astro layouts
 │ ├── pages/ # Astro pages
 │ │ └── api/ # API endpoints
 │ ├── components/ # UI components (Astro & React)
-│ └── assets/ # Static assets
-├── public/ # Public assets
+│ ├── layouts/ # Astro layouts
+│ ├── lib/
+│ │ ├── ai/ # Single entry point for AI calls, limits and logging
+│ │ ├── topics/ # Topics, quizzes, flashcards and study logic
+│ │ └── badges/ # Badge catalog
+│ ├── middleware.ts # Session and route protection
+│ └── worker.ts # Cloudflare Worker entry point
+├── supabase/
+│ ├── migrations/ # Database schema
+│ └── tests/ # pgTAP database tests
+├── e2e/ # Playwright tests
+├── scripts/ # Smoke tests and the local E2E runner
+├── context/ # Product documents and change history
 ├── wrangler.jsonc # Cloudflare Workers config
 ```
 
@@ -89,19 +124,13 @@ Requires [Docker](https://www.docker.com/) and ~7 GB RAM.
 cp .env.example .env
 ```
 
-2. Initialize the local Supabase project (creates a `supabase/` config folder):
-
-```bash
-npx supabase init
-```
-
-3. Start the local stack (downloads Docker images on first run):
+2. Start the local stack (downloads Docker images on first run):
 
 ```bash
 npx supabase start
 ```
 
-4. Copy the credentials printed by the CLI into your `.env` and `.dev.vars`, and list who may sign in:
+3. Copy the credentials printed by the CLI into your `.env` and `.dev.vars`, and list who may sign in:
 
 ```
 SUPABASE_URL=http://127.0.0.1:54321
@@ -111,7 +140,7 @@ ALLOWED_EMAILS=you@example.com,partner@example.com
 
 For a real local GitHub login, create a GitHub OAuth App with callback `http://127.0.0.1:54321/auth/v1/callback` and export `SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID` / `SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET` before `npx supabase start` (read by `supabase/config.toml`).
 
-5. To stop the stack when done:
+4. To stop the stack when done:
 
 ```bash
 npx supabase stop
@@ -144,12 +173,12 @@ In the Supabase dashboard:
 
 | Route                | Description                                                                |
 | -------------------- | -------------------------------------------------------------------------- |
-| `/auth/signin`       | "Sign in with GitHub" button                                               |
+| `/auth/signin`       | "Zaloguj się przez GitHub" button                                          |
 | `/api/auth/signin`   | Starts the GitHub OAuth flow                                               |
 | `/api/auth/callback` | OAuth callback: exchanges the code, rejects emails not in `ALLOWED_EMAILS` |
-| `/dashboard`         | Example protected page (redirects to `/auth/signin` if unauthenticated)    |
+| `/dashboard`         | Topic list after sign-in (redirects to `/auth/signin` if unauthenticated)  |
 
-Route protection is handled in `src/middleware.ts`. Add paths to the `PROTECTED_ROUTES` array there to require authentication. The middleware also signs out any session whose email is no longer in `ALLOWED_EMAILS`.
+Route protection is handled in `src/middleware.ts`, which redirects unauthenticated visitors away from the pages listed in `PROTECTED_ROUTES`. API routes answer 401 themselves. The middleware also signs out any session whose email is no longer in `ALLOWED_EMAILS`.
 
 ## Database migrations
 
@@ -176,7 +205,9 @@ Every AI call goes through `getAi(supabase, user).call(...)` in `src/lib/ai/` �
 
 ## Deployment
 
-This project deploys to [Cloudflare Workers](https://workers.cloudflare.com/).
+This project deploys to [Cloudflare Workers](https://workers.cloudflare.com/). Workers Builds deploys every push to `main` and creates a preview URL for other branches.
+
+To deploy by hand:
 
 1. Build the project:
 
@@ -205,14 +236,16 @@ It needs a reachable Supabase instance (local or cloud) with the GitHub provider
 
 `scripts/smoke-topics.mjs` covers the topic flow as signed-in users: create, generate (`AI_MODE=fake`), edit, regenerate, confirm, the lock, the diagnostic quiz (answers hidden until the end, one quiz per topic), a second account and the daily generation limit (21st call → 429). It creates test accounts through the Supabase admin API and signs them in with a password, so it runs only in CI against the throwaway local stack: CI enables the email provider there (`enable_signup = false` in `supabase/config.toml` turns it off entirely) and passes `SUPABASE_SERVICE_ROLE_KEY` to that step only.
 
-> **Note:** this script exists primarily to guard the development of the starter itself — it is a fast sanity check that dependency upgrades did not break the build, the Cloudflare adapter or the Supabase auth flow. It is **not** a substitute for a real test suite. Once you build your own product on top of this starter, add proper tests (unit, integration, end-to-end) suited to your application.
+## E2E tests
+
+`e2e/` holds the Playwright tests, including the critical path from the user's perspective: sign in, create a topic, take the quiz and study flashcards, on fake AI. Locally, `npm run e2e` points `.env` and `.dev.vars` at the local Supabase stack for the run and restores them afterwards. See `scripts/e2e.mjs`.
 
 ## CI
 
-GitHub Actions runs two jobs on every push and PR to `master`:
+GitHub Actions runs two jobs on every push and PR to `main`:
 
-- **ci** — lint, `astro check` and build. Configure `SUPABASE_URL` and `SUPABASE_KEY` as repository secrets for the build step.
-- **smoke** — starts a local Supabase via the Supabase CLI, builds, serves the production preview on the Cloudflare runtime and runs `npm run smoke` and `npm run smoke:topics` against it. No secrets required.
+- **ci** — lint, unit tests, `astro check` and build. Configure `SUPABASE_URL` and `SUPABASE_KEY` as repository secrets for the build step.
+- **smoke** — starts a local Supabase via the Supabase CLI, runs the pgTAP database tests, builds, serves the production preview on the Cloudflare runtime and runs `npm run smoke`, `npm run smoke:topics` and the Playwright tests against it. No secrets required.
 
 ## License
 
