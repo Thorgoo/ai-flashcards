@@ -74,7 +74,7 @@ const astroConfig = defineConfig({
 });
 
 const scriptsConfig = defineConfig({
-  files: ["scripts/**/*.mjs"],
+  files: ["scripts/**/*.mjs", ".claude/hooks/**/*.mjs"],
   extends: [tseslint.configs.disableTypeChecked],
   languageOptions: { globals: { console: true, process: true, fetch: true, URLSearchParams: true } },
   rules: { "no-console": "off" },
