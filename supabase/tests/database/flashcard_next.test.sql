@@ -7,7 +7,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(41);
+select plan(43);
 
 insert into auth.users (id, email)
 values
@@ -91,6 +91,25 @@ select throws_ok(
   'P0409',
   'batch_generating',
   'a running generation of batch 2 cannot be claimed again'
+);
+
+-- One second below the 180 s TTL; now() is frozen in this transaction.
+reset role;
+update public.flashcard_batches set claimed_at = now() - interval '179 seconds'
+where topic_id = '00000000-0000-0000-0000-0000000000a1' and seq = 2;
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
+
+select throws_ok(
+  $$ select public.claim_next_flashcard_batch('00000000-0000-0000-0000-0000000000a1', 2) $$,
+  'P0409',
+  'batch_generating',
+  'a claim of batch 2 that is 179 s old is still running and cannot be claimed again'
+);
+select is(
+  (select claimed_at from public.flashcard_batches where topic_id = '00000000-0000-0000-0000-0000000000a1' and seq = 2),
+  now() - interval '179 seconds',
+  'a refused claim of batch 2 leaves claimed_at unchanged'
 );
 
 reset role;

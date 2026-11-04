@@ -5,7 +5,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(41);
+select plan(45);
 
 insert into auth.users (id, email)
 values
@@ -174,6 +174,39 @@ select is(
 select lives_ok(
   $$ select public.claim_quiz('00000000-0000-0000-0000-0000000000a3') $$,
   'a released quiz can be claimed again'
+);
+
+-- The TTL boundary, one second either side of 90 s; now() is frozen in this transaction.
+reset role;
+update public.quizzes set claimed_at = now() - interval '89 seconds'
+where topic_id = '00000000-0000-0000-0000-0000000000a3';
+set local role authenticated;
+
+select throws_ok(
+  $$ select public.claim_quiz('00000000-0000-0000-0000-0000000000a3') $$,
+  'P0409',
+  'quiz_generating',
+  'a claim 89 s old is still running and cannot be claimed again'
+);
+select is(
+  (select claimed_at from public.quizzes where topic_id = '00000000-0000-0000-0000-0000000000a3'),
+  now() - interval '89 seconds',
+  'a refused claim leaves claimed_at unchanged'
+);
+
+reset role;
+update public.quizzes set claimed_at = now() - interval '91 seconds'
+where topic_id = '00000000-0000-0000-0000-0000000000a3';
+set local role authenticated;
+
+select lives_ok(
+  $$ select public.claim_quiz('00000000-0000-0000-0000-0000000000a3') $$,
+  'a claim 91 s old is abandoned and is taken over'
+);
+select is(
+  (select claimed_at from public.quizzes where topic_id = '00000000-0000-0000-0000-0000000000a3'),
+  now(),
+  'taking over at 91 s renews the claim'
 );
 
 reset role;
